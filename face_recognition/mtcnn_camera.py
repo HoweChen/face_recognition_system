@@ -78,8 +78,8 @@ if __name__ == '__main__':
             # face_locations = face_recognition.face_locations(rgb_small_frame)
             detect_result = detector.detect_faces(rgb_small_frame)[0]["box"]
             face_locations = [tuple(
-                    [detect_result[1]+40, detect_result[0] + detect_result[2] + 3,
-                     detect_result[1] + detect_result[-1] + 10,
+                    [detect_result[1], detect_result[0] + detect_result[2],
+                     detect_result[1] + detect_result[-1],
                      detect_result[0]])]
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
             # print(f"Answer: {face_locations}")
