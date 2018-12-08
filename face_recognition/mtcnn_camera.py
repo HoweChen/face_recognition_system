@@ -76,7 +76,30 @@ if __name__ == '__main__':
         if process_this_frame:
             # Find all the faces and face encodings in the current frame of video
             # face_locations = face_recognition.face_locations(rgb_small_frame)
-            detect_result = detector.detect_faces(rgb_small_frame)[0]["box"]
+            try:
+                detect_result = detector.detect_faces(rgb_small_frame)[0]["box"]
+            except IndexError as e:
+                # which means the detector doesn't find the faces
+                # Hit '1' on the keyboard to input the new face into the database!
+                if cv2.waitKey(1) & 0xFF == ord('1'):
+
+                    try:
+                        r.rpushx("known_face_encodings", face_encodings[0].tostring())
+                        r.rpushx("known_face_names", "Yuhao Chen")
+                        print("Success with:", end=" ")
+                        print(r.lrange("known_face_names", 0, -1))
+                    except Exception as e:
+                        pass
+
+                # Display the resulting image
+                cv2.imshow('Video', frame)
+
+                # Hit 'q' on the keyboard to quit!
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                continue
+
+            # the detector does find the faces
             face_locations = [tuple(
                     [detect_result[1], detect_result[0] + detect_result[2],
                      detect_result[1] + detect_result[-1],
@@ -137,7 +160,7 @@ if __name__ == '__main__':
                 print("Success with:", end=" ")
                 print(r.lrange("known_face_names", 0, -1))
             except Exception as e:
-                continue
+                pass
 
         # Display the resulting image
         cv2.imshow('Video', frame)
