@@ -24,8 +24,8 @@ if __name__ == '__main__':
     redis_pool = redis.ConnectionPool()
     r = redis.Redis(connection_pool=redis_pool)
 
-    obama_image_file = "face_recognition/examples/obama.jpg"
-    biden_image_file = "face_recognition/examples/biden.jpg"
+    obama_image_file = "examples/obama.jpg"
+    biden_image_file = "examples/biden.jpg"
     video_capture = cv2.VideoCapture(0)
 
     # Load a sample picture and learn how to recognize it.
