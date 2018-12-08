@@ -82,7 +82,7 @@ if __name__ == '__main__':
                 # See if the face is a match for the known face(s)
                 true_or_false, points = face_recognition.compare_faces(
                         list(map(lambda x: np.frombuffer(x), r.lrange("known_face_encodings", 0, -1))), face_encoding,
-                        tolerance=0.5)
+                        tolerance=0.4)
                 name = "Unknown"
                 best_point = None
 
