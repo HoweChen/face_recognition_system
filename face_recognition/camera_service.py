@@ -27,34 +27,18 @@ def get_random_RGB_color():
 
 
 class Instance:
-    def __init__(self):
+    def __init__(self, mode="HOG"):
         # connect to the redis service
         self.redis_pool = redis.ConnectionPool()
         self.r = redis.Redis(connection_pool=self.redis_pool)
+        self.detector = MTCNN() if mode == "MTCNN" else None
+        self.process_this_frame = True
 
-        # Load a sample picture and learn how to recognize it.
-        obama_image = face_recognition.load_image_file(ImagePath.OBAMA_IMAGE_FILE.value)
-        obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
-        str_obama_face_encoding = obama_face_encoding.tostring()
-
-        # Load a second sample picture and learn how to recognize it.
-        biden_image = face_recognition.load_image_file(ImagePath.BIDEN_IMAGE_FILE.value)
-        biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
-        str_biden_face_encoding = biden_face_encoding.tostring()
-
-        # make sure that the list is empty then append the base data
-        if self.r.rpushx("known_face_encodings", str_obama_face_encoding) == 0 and self.r.rpushx("known_face_names",
-                                                                                                 "Barack Obama".encode(
-                                                                                                         "utf-8")) == 0:
-            self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
-            self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
+        self.data_validation()
 
         # Initialize some variables
         face_locations = []
         face_encodings = []
-        face_names = []
-        process_this_frame = True
-        detector = MTCNN()
 
         video_capture = cv2.VideoCapture(0)
 
@@ -69,41 +53,34 @@ class Instance:
             rgb_small_frame = small_frame[:, :, ::-1]
 
             # Only process every other frame of video to save time
-            if process_this_frame:
+            if self.process_this_frame:
                 # Find all the faces and face encodings in the current frame of video
                 # face_locations = face_recognition.face_locations(rgb_small_frame)
-                try:
-                    detect_result = detector.detect_faces(rgb_small_frame)[0]["box"]
-                except IndexError as e:
-                    # which means the detector doesn't find the faces
-                    # Hit '1' on the keyboard to input the new face into the database!
-                    if cv2.waitKey(1) & 0xFF == ord('1'):
+                if mode == "MTCNN" and self.detector is not None:
+                    try:
+                        detect_result = self.detector.detect_faces(rgb_small_frame)[0]["box"]
+                    except IndexError as e:
+                        # which means the detector doesn't find the faces
 
-                        try:
-                            self.r.rpushx("known_face_encodings", face_encodings[0].tostring())
-                            self.r.rpushx("known_face_names", "Yuhao Chen")
-                            print("Success with:", end=" ")
-                            print(self.r.lrange("known_face_names", 0, -1))
-                        except Exception as e:
-                            pass
+                        # Display the resulting image
+                        cv2.imshow('Video', frame)
 
-                    # Display the resulting image
-                    cv2.imshow('Video', frame)
+                        # Hit 'q' on the keyboard to quit!
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
+                        continue
 
-                    # Hit 'q' on the keyboard to quit!
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
-                    continue
+                    # the detector does find the faces
+                    face_locations = [tuple(
+                            [detect_result[1], detect_result[0] + detect_result[2],
+                             detect_result[1] + detect_result[-1],
+                             detect_result[0]])]
+                    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-                # the detector does find the faces
-                face_locations = [tuple(
-                        [detect_result[1], detect_result[0] + detect_result[2],
-                         detect_result[1] + detect_result[-1],
-                         detect_result[0]])]
-                face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-                # print(f"Answer: {face_locations}")
-                # print(f"Raw: {detect_result}")
-                # print(f"Modified: {face_locations_two}")
+                if mode == "HOG":
+                    face_locations = face_recognition.face_locations(rgb_small_frame)
+                    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+
                 face_names = []
                 best_point_list = []
 
@@ -125,7 +102,7 @@ class Instance:
                     best_point_list.append(best_point)
                     face_names.append(name)
 
-            process_this_frame = not process_this_frame
+            self.process_this_frame = not self.process_this_frame
 
             # Display the results
             for (top, right, bottom, left), temp_name, temp_best_point in zip(face_locations, face_names,
@@ -171,6 +148,25 @@ class Instance:
         video_capture.release()
         cv2.destroyAllWindows()
 
+    def data_validation(self):
+        # Load a sample picture and learn how to recognize it.
+        obama_image = face_recognition.load_image_file(ImagePath.OBAMA_IMAGE_FILE.value)
+        obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
+        str_obama_face_encoding = obama_face_encoding.tostring()
+
+        # Load a second sample picture and learn how to recognize it.
+        biden_image = face_recognition.load_image_file(ImagePath.BIDEN_IMAGE_FILE.value)
+        biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
+        str_biden_face_encoding = biden_face_encoding.tostring()
+
+        # make sure that the list is empty then append the base data
+        if self.r.rpushx("known_face_encodings", str_obama_face_encoding) == 0 and self.r.rpushx("known_face_names",
+                                                                                                 "Barack Obama".encode(
+                                                                                                         "utf-8")) == 0:
+            self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
+            self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
+
 
 if __name__ == '__main__':
-    instance = Instance()
+    instance = Instance(mode="HOG")
+    # instance = Instance(mode="MTCNN")
