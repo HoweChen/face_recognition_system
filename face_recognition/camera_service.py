@@ -97,7 +97,7 @@ class Instance:
         # Find all the faces and face encodings in the current frame of video
         if self.mode == "MTCNN" and self.detector is not None:
             try:
-                detect_result = self.detector.detect_faces(input_frame)[0]["box"]
+                detect_result = [face["box"] for face in self.detector.detect_faces(input_frame)]
             except IndexError:
                 # which means the detector doesn't find the faces, then directly show the image without box
                 detect_result = None
@@ -105,9 +105,9 @@ class Instance:
             if detect_result is not None:
                 # the detector does find the faces
                 self.face_locations = [tuple(
-                        [detect_result[1], detect_result[0] + detect_result[2],
-                         detect_result[1] + detect_result[-1],
-                         detect_result[0]])]
+                        [single_face[1], single_face[0] + single_face[2],
+                         single_face[1] + single_face[-1],
+                         single_face[0]]) for single_face in detect_result]
                 self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations)
 
         if self.mode == "HOG":
