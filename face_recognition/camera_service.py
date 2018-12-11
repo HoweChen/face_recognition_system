@@ -80,7 +80,6 @@ class Instance:
                     print(self.r.lrange("known_face_names", 0, -1))
                 except Exception as e:
                     print(e)
-                    pass
 
             # Display the resulting image
             cv2.imshow('Video', frame)
