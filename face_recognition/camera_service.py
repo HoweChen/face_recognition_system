@@ -42,17 +42,15 @@ class Instance:
         self.face_names = []
         self.best_point_list = []
 
-        self.serve()
-
     def serve(self):
 
         video_capture = cv2.VideoCapture(0)
 
         process_this_frame = True
 
-        while True:
+        for frame in self.frame_fatch(video_capture):
             # Grab a single frame of video
-            ret, frame = video_capture.read()
+            ret, frame = frame
 
             # Resize frame of video to 1/4 size for faster face recognition processing
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -91,6 +89,11 @@ class Instance:
         # Release handle to the webcam
         video_capture.release()
         cv2.destroyAllWindows()
+
+    @staticmethod
+    def frame_fatch(video_capture):
+        while True:
+            yield video_capture.read()
 
     def face_detection(self, input_frame):
         # Find all the faces and face encodings in the current frame of video
@@ -181,3 +184,4 @@ class Instance:
 if __name__ == '__main__':
     # instance = Instance(mode="HOG")
     instance = Instance(mode="MTCNN")
+    instance.serve()
