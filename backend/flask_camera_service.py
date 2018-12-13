@@ -8,8 +8,8 @@ from enum import Enum
 
 
 class ImagePath(Enum):
-    OBAMA_IMAGE_FILE = "examples/obama.jpg"
-    BIDEN_IMAGE_FILE = "examples/biden.jpg"
+    OBAMA_IMAGE_FILE = "../face_recognition/examples/obama.jpg"
+    BIDEN_IMAGE_FILE = "../face_recognition/examples/biden.jpg"
 
 
 """
@@ -22,11 +22,8 @@ If you want the multiple person detection and recognition, please use HOG versio
 """
 
 
-def get_random_RGB_color():
-    return tuple(np.random.choice(range(256), size=3))
 
-
-class Instance:
+class Camera:
     def __init__(self, mode="HOG"):
         # connect to the redis service
         self.mode = mode
@@ -44,11 +41,12 @@ class Instance:
 
     def serve(self):
 
-        video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv2.VideoCapture(0)
+
 
         process_this_frame = True
 
-        for frame in self.frame_fatch(video_capture):
+        for frame in self.frame_fetch(self.video_capture):
             # Grab a single frame of video
             ret, frame = frame
 
@@ -67,6 +65,8 @@ class Instance:
 
             # Display the results
             self.render_boxes(frame)
+            yield frame
+
 
             # # Hit '1' on the keyboard to input the new face into the database!
             # if cv2.waitKey(1) & 0xFF == ord('1'):
@@ -87,11 +87,11 @@ class Instance:
             #     break
 
         # Release handle to the webcam
-        video_capture.release()
+        self.video_capture.release()
         cv2.destroyAllWindows()
 
     @staticmethod
-    def frame_fatch(video_capture):
+    def frame_fetch(video_capture):
         while True:
             yield video_capture.read()
 
@@ -183,5 +183,5 @@ class Instance:
 
 if __name__ == '__main__':
     # instance = Instance(mode="HOG")
-    instance = Instance(mode="MTCNN")
+    instance = Camera(mode="MTCNN")
     instance.serve()

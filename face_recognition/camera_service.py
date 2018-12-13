@@ -22,9 +22,6 @@ If you want the multiple person detection and recognition, please use HOG versio
 """
 
 
-def get_random_RGB_color():
-    return tuple(np.random.choice(range(256), size=3))
-
 
 class Instance:
     def __init__(self, mode="HOG"):
@@ -44,11 +41,11 @@ class Instance:
 
     def serve(self):
 
-        video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv2.VideoCapture(0)
 
         process_this_frame = True
 
-        for frame in self.frame_fatch(video_capture):
+        for frame in self.frame_fatch(self.video_capture):
             # Grab a single frame of video
             ret, frame = frame
 
@@ -87,7 +84,7 @@ class Instance:
                 break
 
         # Release handle to the webcam
-        video_capture.release()
+        self.video_capture.release()
         cv2.destroyAllWindows()
 
     @staticmethod
