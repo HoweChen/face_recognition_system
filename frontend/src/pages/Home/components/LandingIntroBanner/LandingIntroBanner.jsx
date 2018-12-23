@@ -21,7 +21,7 @@ export default class LandingIntroBanner extends Component {
           className="landing-intro-banner-background"
           style={{
             backgroundImage: `url(${require("./images/pedro-lastra-157071-unsplash.jpg")})`,
-            backgroundPosition: "center",
+            backgroundPosition: "center"
           }}
         />
         <div className="landing-intro-banner-content-wrapper">
@@ -41,7 +41,7 @@ export default class LandingIntroBanner extends Component {
                     padding: "0 58px",
                     fontSize: 16,
                     marginBottom: "20px",
-                    color: "#3080FE",
+                    color: "#3080FE"
                   }}
                   size="large"
                   type="normal"
@@ -55,7 +55,7 @@ export default class LandingIntroBanner extends Component {
                     height: 50,
                     padding: "0 58px",
                     fontSize: 16,
-                    marginBottom: "20px",
+                    marginBottom: "20px"
                   }}
                   type="primary"
                   size="large"
@@ -88,7 +88,7 @@ const styles = {
     letterSpacing: "4px",
     lineHeight: "60px",
     color: "#fff",
-    marginBottom: "30px",
+    marginBottom: "30px"
   },
   subTitle: {
     fontSize: "30px",
@@ -96,25 +96,25 @@ const styles = {
     color: "#fff",
     textShadow: "#C8C8C8 1px 1px 2px",
     textAlign: "center",
-    lineHeight: "1.7em",
+    lineHeight: "1.7em"
   },
   leftButton: {
-    marginRight: "20px",
+    marginRight: "20px"
   },
   gitStar: {
     border: "0px",
     height: "32px",
     width: "145px",
-    margin: "0 auto",
+    margin: "0 auto"
   },
   gitContainer: {
     marginTop: "30px",
-    textAlign: "center",
+    textAlign: "center"
   },
   updateLogLinkWrap: {
-    textAlign: "center",
+    textAlign: "center"
   },
   updateLogLink: {
-    color: "#fff",
-  },
+    color: "#fff"
+  }
 };
