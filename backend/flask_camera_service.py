@@ -3,7 +3,6 @@ import cv2
 import redis
 import numpy as np
 from mtcnn.mtcnn import MTCNN
-from multiprocessing.dummy import Pool
 from enum import Enum
 
 
