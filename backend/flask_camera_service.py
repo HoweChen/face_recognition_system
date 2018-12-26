@@ -206,7 +206,7 @@ def face_detection():
 
 
 def render_box():
-
+    pass
 
 if __name__ == '__main__':
     instance = Camera(mode="MTCNN")
