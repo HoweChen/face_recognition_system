@@ -101,7 +101,6 @@ class Camera:
             except IndexError:
                 # which means the detector doesn't find the faces, then directly show the image without box
                 detect_result = None
-
             if detect_result is not None:
                 # the detector does find the faces
                 self.face_locations = [tuple(
@@ -192,6 +191,21 @@ def image_to_str(input_image) -> AnyStr:
     retval, buf = cv2.imencode(".jpg", input_image)
     output_str = base64.b64encode(buf).decode()
     return output_str
+
+
+def data_validation():
+    pass
+
+
+def face_matching():
+    pass
+
+
+def face_detection():
+    pass
+
+
+def render_box():
 
 
 if __name__ == '__main__':
