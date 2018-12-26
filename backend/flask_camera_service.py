@@ -30,6 +30,7 @@ class Camera:
         self.redis_pool = redis.ConnectionPool()
         self.r = redis.Redis(connection_pool=self.redis_pool)
         self.detector = MTCNN() if mode == "MTCNN" else None
+        self.video_capture = None
 
         self.data_validation()
 
@@ -65,24 +66,6 @@ class Camera:
             # Display the results
             self.render_boxes(frame)
             yield frame
-
-            # # Hit '1' on the keyboard to input the new face into the database!
-            # if cv2.waitKey(1) & 0xFF == ord('1'):
-            #
-            #     try:
-            #         self.r.rpushx("known_face_encodings", self.face_encodings[0].tostring())
-            #         self.r.rpushx("known_face_names", "Yuhao Chen")
-            #         # print("Success with:", end=" ")
-            #         # print(self.r.lrange("known_face_names", 0, -1))
-            #     except Exception as e:
-            #         print(e)
-            #
-            # # Display the resulting image
-            # cv2.imshow('Video', frame)
-            #
-            # # Hit 'q' on the keyboard to quit!
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
 
         # Release handle to the webcam
         self.video_capture.release()
@@ -207,6 +190,7 @@ def face_detection():
 
 def render_box():
     pass
+
 
 if __name__ == '__main__':
     instance = Camera(mode="MTCNN")
