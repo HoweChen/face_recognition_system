@@ -4,6 +4,8 @@ import redis
 import numpy as np
 from mtcnn.mtcnn import MTCNN
 from enum import Enum
+import base64
+from typing import AnyStr
 
 
 class ImagePath(Enum):
@@ -19,7 +21,6 @@ A better result means that for one person, if you cover your mouth, the detector
 If you want the multiple person detection and recognition, please use HOG version instead
 
 """
-
 
 
 class Camera:
@@ -41,7 +42,6 @@ class Camera:
     def serve(self):
 
         self.video_capture = cv2.VideoCapture(0)
-
 
         process_this_frame = True
 
@@ -65,7 +65,6 @@ class Camera:
             # Display the results
             self.render_boxes(frame)
             yield frame
-
 
             # # Hit '1' on the keyboard to input the new face into the database!
             # if cv2.waitKey(1) & 0xFF == ord('1'):
@@ -180,7 +179,21 @@ class Camera:
             self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
 
 
+# the following export API methods are split from the class Camera
+
+def string_to_image(input_str: str) -> np.ndarray:
+    decoded_data = base64.b64decode(input_str)
+    np_data = np.fromstring(decoded_data, np.uint8)
+    image = cv2.imdecode(np_data, cv2.IMREAD_UNCHANGED)
+    return image
+
+
+def image_to_str(input_image) -> AnyStr:
+    retval, buf = cv2.imencode(".jpg", input_image)
+    output_str = base64.b64encode(buf).decode()
+    return output_str
+
+
 if __name__ == '__main__':
-    # instance = Instance(mode="HOG")
     instance = Camera(mode="MTCNN")
     instance.serve()
