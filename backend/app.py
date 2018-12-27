@@ -1,13 +1,16 @@
+from cv2.cv2 import VideoCapture
 from flask import Flask, render_template, Response
 import cv2
-from flask_camera_service import Camera
-from flask_socketio import SocketIO, join_room, leave_room, send
+from redis import ConnectionPool
+
+from flask_camera_service import Camera, single_serve
+from flask_socketio import SocketIO, join_room, leave_room, send, emit
 import redis
 
-app = Flask(__name__)
-vc = cv2.VideoCapture(0)
-socketio = SocketIO(app)
-redis_pool = redis.ConnectionPool()
+app: Flask = Flask(__name__)
+vc: VideoCapture = cv2.VideoCapture(0)
+socketio: SocketIO = SocketIO(app)
+redis_pool: ConnectionPool = redis.ConnectionPool()
 
 
 @app.route('/')
@@ -69,17 +72,15 @@ def handle_test(data):
 
 @socketio.on("image")
 def handle_image(image: str) -> None:
-    # print(image)
-    # print(id(camera_instance))
     r = redis.Redis(connection_pool=redis_pool)
-
+    # we let "process_this_frame" decision happen in client-side
+    output_image_str = single_serve(image, r, mode="MTCNN")
+    emit("result", output_image_str)
 
 
 @socketio.on("connect")
 def handle_connect():
     print("\nClient Connected")
-    # camera_instance = Camera(mode="MTCNN")
-    # print(camera_instance)
 
 
 @socketio.on("disconnect")
