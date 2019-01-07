@@ -4,7 +4,7 @@ from flask import Flask, render_template, Response
 import cv2
 from redis import ConnectionPool
 from enum import Enum
-from flask_camera_service import Camera, single_serve
+from flask_camera_service import Camera
 from flask_socketio import SocketIO, join_room, leave_room, send, emit
 import redis
 from typing import List
@@ -92,6 +92,7 @@ def handle_image(image: str) -> None:
     session_id = flask.request.sid
     camera_instance: Camera = socketio.camera_instances_dict.get(session_id)
     username: str = camera_instance.serve_single_image(image)
+    print(username)
     emit("result", username, room=session_id)
 
 
