@@ -20,41 +20,41 @@ export default class LoginFrom extends Component {
       return;
     }
     console.log('values:', values);
-    Feedback.toast.success('登录成功');
+    Feedback.toast.success('Login Success!');
     // 登录成功后做对应的逻辑处理
   };
 
   render() {
     const config = [
       {
-        label: '用户名',
+        label: 'Username',
         component: 'Input',
         componentProps: {
-          placeholder: '用户名',
+          placeholder: 'Username',
           size: 'large',
           maxLength: 20,
         },
         formBinderProps: {
           name: 'name',
           required: true,
-          message: '必填',
+          message: 'This field is required',
         },
       },
       {
-        label: '密码',
+        label: 'Password',
         component: 'Input',
         componentProps: {
-          placeholder: '密码',
+          placeholder: 'Password',
           htmlType: 'passwd',
         },
         formBinderProps: {
           name: 'passwd',
           required: true,
-          message: '必填',
+          message: 'This field is required',
         },
       },
       {
-        label: '记住账号',
+        label: 'Remember username',
         component: 'Checkbox',
         componentProps: {},
         formBinderProps: {
@@ -62,7 +62,15 @@ export default class LoginFrom extends Component {
         },
       },
       {
-        label: '登录',
+        label: 'Face Recognition',
+        component: 'Switch',
+        componentProps: {},
+        formBinderProps: {
+          name: 'switch',
+        },
+      },
+      {
+        label: 'Login',
         component: 'Button',
         componentProps: {
           type: 'primary',
@@ -78,18 +86,20 @@ export default class LoginFrom extends Component {
     };
 
     const links = [
-      { to: '/register', text: '立即注册' },
-      { to: '/forgetpassword', text: '找回密码' },
+      { to: '/register', text: 'Register now!' },
+      { to: '/forgetpassword', text: 'Forgot the password?' },
     ];
 
     return (
       <AuthForm
-        title="登录"
+        title="Login"
         config={config}
         initFields={initFields}
         formChange={this.formChange}
         handleSubmit={this.handleSubmit}
         links={links}
+        changeFaceMode={this.props.changeFaceMode}
+        isFaceModeOn={this.props.isFaceModeOn}
       />
     );
   }
