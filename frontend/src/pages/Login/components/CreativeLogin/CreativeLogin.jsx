@@ -10,16 +10,31 @@ export default class CreativeLogin extends Component {
 
   static defaultProps = {};
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      isFaceModeOn: false,
+    };
+    this.changeFaceMode = this.changeFaceMode.bind();
+  }
+
+  changeFaceMode = () => {
+    this.setState(prevState => ({
+      isFaceModeOn: !prevState.isFaceModeOn,
+    }));
+  };
+
+
   render() {
     return (
       <div style={styles.container}>
         <Row wrap>
           <Col l="12">
-            <LoginIntro />
+            <LoginIntro isFaceModeOn={this.state.isFaceModeOn} />
           </Col>
           <Col l="12">
             <div style={styles.content}>
-              <LoginForm />
+              <LoginForm changeFaceMode={() => this.changeFaceMode} isFaceModeOn={this.state.isFaceModeOn} />
             </div>
           </Col>
         </Row>
