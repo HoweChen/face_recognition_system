@@ -1,10 +1,10 @@
 /* eslint react/no-string-refs:0, array-callback-return:0, react/forbid-prop-types:0 */
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { Checkbox, Grid } from '@icedesign/base';
+import { Checkbox, Grid, Switch } from '@icedesign/base';
 import {
-  FormBinderWrapper as IceFormBinderWrapper,
   FormBinder as IceFormBinder,
+  FormBinderWrapper as IceFormBinderWrapper,
   FormError as IceFormError,
 } from '@icedesign/form-binder';
 import CustomInput from './CustomInput';
@@ -21,6 +21,8 @@ class AuthForm extends Component {
     links: PropTypes.array,
     handleSubmit: PropTypes.func,
     formChange: PropTypes.func,
+    changeFaceMode: PropTypes.func.isRequired,
+    isFaceModeOn: PropTypes.bool.isRequired,
   };
 
   static defaultProps = {
@@ -33,6 +35,7 @@ class AuthForm extends Component {
     super(props);
     this.state = {
       value: props.initFields,
+
     };
   }
 
@@ -98,6 +101,21 @@ class AuthForm extends Component {
     );
   };
 
+  renderSwitch = (item) => {
+    return (
+      <Row style={styles.formItem} key={item.label}>
+        <Col>
+          <IceFormBinder {...item.formBinderProps}>
+            {/* <p>Use face recognition?</p> */}
+            <Switch checked={this.props.isFaceModeOn}
+              onChange={this.props.changeFaceMode(this.props.isFaceModeOn)}
+            />
+          </IceFormBinder>
+        </Col>
+      </Row>
+    );
+  };
+
   renderFromItem = (config) => {
     return config.map((item) => {
       if (item.component === 'Input') {
@@ -106,6 +124,8 @@ class AuthForm extends Component {
         return this.renderCheckbox(item);
       } else if (item.component === 'Button') {
         return this.renderButton(item);
+      } else if (item.component === 'Switch') {
+        return this.renderSwitch(item);
       }
     });
   };
