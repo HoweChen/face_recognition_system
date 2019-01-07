@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import FaceCamera from '../../../../components/FaceCamera';
+
 
 export default class LoginIntro extends Component {
   static displayName = 'LoginIntro';
@@ -14,26 +16,38 @@ export default class LoginIntro extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
-        <div style={styles.logo}>
-          <a href="#" style={styles.link}>
-            <img
-              style={styles.logoImg}
-              src={require('./images/logo.png')}
-              alt="logo"
-            />
-          </a>
-        </div>
-        <div style={styles.title}>
+
+        {(this.props.isFaceModeOn) ? (
+          <div style={styles.container}>
+            <FaceCamera />
+          </div>) : (
+          <div style={styles.container}>
+            <div style={styles.logo}>
+              <a href="#"
+                style={styles.link}
+              >
+                <img
+                  style={styles.logoImg}
+                  src={require('./images/logo.png')}
+                  alt="logo"
+                />
+              </a>
+            </div>
+            <div style={styles.title}>
           技术领域智能助手 <br />
           让沟通变得更加智能、高效、便捷
-        </div>
-        <p style={styles.description}>Amazing Stuff is Lorem Here.ICE Team</p>
-        <a href="#" style={styles.button}>
-          进入首页
-        </a>
-        <div style={styles.border} />
-      </div>
+            </div>
+            <p style={styles.description}>Amazing Stuff is Lorem Here.ICE
+              Team
+            </p>
+            <a href="#"
+              style={styles.button}
+            >
+              Go back to homepage
+            </a>
+            <div style={styles.border} />
+          </>
+        )}
     );
   }
 }
