@@ -7952,6 +7952,13 @@ react-transition-group@^1.2.1:
     prop-types "^15.5.6"
     warning "^3.0.0"
 
+react-webcam@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/react-webcam/-/react-webcam-1.0.4.tgz#5ebaffc9fb63efb7f65e9bb6689b58769c15f8af"
+  integrity sha512-qSwjpigexfazOWp5YTUWG4+94ijjt7E2dSLXss5pVYT5lBdQYOM5r1qUrUcb9XADSot4jvJHdhxa8/1+2BOo6g==
+  dependencies:
+    prop-types "^15.5.8"
+
 react@*, react@^16.4.1:
   version "16.6.3"
   resolved "https://registry.npmjs.org/react/-/react-16.6.3.tgz#25d77c91911d6bbdd23db41e70fb094cc1e0871c"

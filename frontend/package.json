@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "face-recognition-system-frontend",
   "dependencies": {
-    "@icedesign/base": "^0.2.0",
+    "@icedesign/base": "^0.2.6",
     "@icedesign/container": "^0.1.0",
     "@icedesign/form-binder": "^0.1.16",
     "@icedesign/icon": "^0.1.1",
@@ -17,8 +17,9 @@
     "prop-types": "^15.5.8",
     "react": "^16.4.1",
     "react-document-title": "^2.0.3",
-    "react-dom": "^16.4.1",
+    "react-dom": "^16.7.0",
     "react-router-dom": "^4.2.2",
+    "react-webcam": "^1.0.4",
     "socket.io": "^2.2.0"
   },
   "devDependencies": {
@@ -28,7 +29,7 @@
     "eslint-plugin-babel": "^4.1.1",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jsx-a11y": "^6.0.3",
-    "eslint-plugin-react": "^7.5.1",
+    "eslint-plugin-react": "^7.12.3",
     "ice-scripts": "^1.6.0-next.3"
   },
   "scripts": {
