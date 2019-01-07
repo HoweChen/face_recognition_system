@@ -34,7 +34,7 @@ export default class LandingIntroBanner extends Component {
               className="landing-intro-banner-buttons"
               style={{ textAlign: "center", marginTop: 70 }}
             >
-              <a href="//alibaba.github.io/ice/block" style={styles.leftButton}>
+              <a href="#/login" style={styles.leftButton}>
                 <Button
                   style={{
                     height: 50,
@@ -49,7 +49,7 @@ export default class LandingIntroBanner extends Component {
                   Login
                 </Button>
               </a>
-              <a href="//localhost:/Signup">
+              <a href="#/register">
                 <Button
                   style={{
                     height: 50,
