@@ -22,7 +22,6 @@ If you want the multiple person detection and recognition, please use HOG versio
 """
 
 
-
 class Instance:
     def __init__(self, mode="HOG"):
         # connect to the redis service
@@ -104,9 +103,9 @@ class Instance:
             if detect_result is not None:
                 # the detector does find the faces
                 self.face_locations = [tuple(
-                        [single_face[1], single_face[0] + single_face[2],
-                         single_face[1] + single_face[-1],
-                         single_face[0]]) for single_face in detect_result]
+                    [single_face[1], single_face[0] + single_face[2],
+                     single_face[1] + single_face[-1],
+                     single_face[0]]) for single_face in detect_result]
                 self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations)
 
         if self.mode == "HOG":
@@ -121,9 +120,9 @@ class Instance:
         for face_encoding in self.face_encodings:
             # See if the face is a match for the known face(s)
             true_or_false, points = face_recognition.compare_faces(
-                    list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1))),
-                    face_encoding,
-                    tolerance=0.4)
+                list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1))),
+                face_encoding,
+                tolerance=0.4)
             name = "Unknown"
             best_point = None
 
@@ -173,7 +172,7 @@ class Instance:
         # make sure that the list is empty then append the base data
         if self.r.rpushx("known_face_encodings", str_obama_face_encoding) == 0 and self.r.rpushx("known_face_names",
                                                                                                  "Barack Obama".encode(
-                                                                                                         "utf-8")) == 0:
+                                                                                                     "utf-8")) == 0:
             self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
             self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
 
