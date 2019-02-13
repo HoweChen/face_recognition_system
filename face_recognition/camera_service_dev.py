@@ -5,6 +5,7 @@ import numpy as np
 from mtcnn.mtcnn import MTCNN
 from multiprocessing.dummy import Pool
 from enum import Enum
+from imutils.video import FPS
 
 
 class ImagePath(Enum):
@@ -12,18 +13,6 @@ class ImagePath(Enum):
     BIDEN_IMAGE_FILE = "examples/biden.jpg"
 
 
-"""
-This detector can only scan one person with a better result
-
-A better result means that for one person, if you cover your mouth, the detector could still detect your face.
-
-If you want the multiple person detection and recognition, please use HOG version instead
-
-"""
-
-
-def get_random_RGB_color():
-    return tuple(np.random.choice(range(256), size=3))
 
 
 class Instance:
@@ -44,13 +33,14 @@ class Instance:
 
     def serve(self):
 
-        video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv2.VideoCapture(0)
+        fps = FPS().start()
 
         process_this_frame = True
 
-        while True:
+        for frame in self.frame_fatch(self.video_capture):
             # Grab a single frame of video
-            ret, frame = video_capture.read()
+            ret, frame = frame
 
             # Resize frame of video to 1/4 size for faster face recognition processing
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -81,14 +71,25 @@ class Instance:
 
             # Display the resulting image
             cv2.imshow('Video', frame)
+            fps.update()
 
             # Hit 'q' on the keyboard to quit!
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                fps.stop()
                 break
 
+        fps.stop()
+        print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))
+        print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+
         # Release handle to the webcam
-        video_capture.release()
+        self.video_capture.release()
         cv2.destroyAllWindows()
+
+    @staticmethod
+    def frame_fatch(video_capture):
+        while True:
+            yield video_capture.read()
 
     def face_detection(self, input_frame):
         # Find all the faces and face encodings in the current frame of video
@@ -102,9 +103,9 @@ class Instance:
             if detect_result is not None:
                 # the detector does find the faces
                 self.face_locations = [tuple(
-                        [single_face[1], single_face[0] + single_face[2],
-                         single_face[1] + single_face[-1],
-                         single_face[0]]) for single_face in detect_result]
+                    [single_face[1], single_face[0] + single_face[2],
+                     single_face[1] + single_face[-1],
+                     single_face[0]]) for single_face in detect_result]
                 self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations)
 
         if self.mode == "HOG":
@@ -119,9 +120,9 @@ class Instance:
         for face_encoding in self.face_encodings:
             # See if the face is a match for the known face(s)
             true_or_false, points = face_recognition.compare_faces(
-                    list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1))),
-                    face_encoding,
-                    tolerance=0.4)
+                list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1))),
+                face_encoding,
+                tolerance=0.4)
             name = "Unknown"
             best_point = None
 
@@ -171,7 +172,7 @@ class Instance:
         # make sure that the list is empty then append the base data
         if self.r.rpushx("known_face_encodings", str_obama_face_encoding) == 0 and self.r.rpushx("known_face_names",
                                                                                                  "Barack Obama".encode(
-                                                                                                         "utf-8")) == 0:
+                                                                                                     "utf-8")) == 0:
             self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
             self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
 
