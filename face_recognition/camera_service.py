@@ -12,12 +12,11 @@ class ImagePath(Enum):
     BIDEN_IMAGE_FILE = "examples/biden.jpg"
 
 
-
-
 class Instance:
-    def __init__(self, mode="HOG"):
+    def __init__(self, mode="HOG", f_e_m="NORMAL"):
         # connect to the redis service
         self.mode = mode
+        self.f_e_m = f_e_m  # detect which feature extraction method
         self.redis_pool = redis.ConnectionPool()
         self.r = redis.Redis(connection_pool=self.redis_pool)
         self.detector = MTCNN() if mode == "MTCNN" else None
@@ -98,11 +97,18 @@ class Instance:
                     [single_face[1], single_face[0] + single_face[2],
                      single_face[1] + single_face[-1],
                      single_face[0]]) for single_face in detect_result]
-                self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations)
-
-        if self.mode == "HOG":
+        elif self.mode == "HOG":
             self.face_locations = face_recognition.face_locations(input_frame)
+        else:
+            raise Exception("Invalid face detection method")
+
+        # feature extraction method
+        if self.f_e_m == "NORMAL":
             self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations)
+        elif self.f_e_m == "FACENET":
+            pass
+        else:
+            raise Exception("Invalid feature extraction method")
 
     def face_matching(self):
 
