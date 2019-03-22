@@ -177,5 +177,5 @@ class Instance:
 
 if __name__ == '__main__':
     # instance = Instance(mode="HOG")
-    instance = Instance(mode="MTCNN")
+    instance = Instance(mode="MTCNN", f_e_m="NORMAL")
     instance.serve()
