@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "face-recognition-system-frontend",
   "dependencies": {
+    "@antv/data-set": "^0.8.9",
     "@icedesign/base": "^0.2.6",
     "@icedesign/container": "^0.1.0",
     "@icedesign/form-binder": "^0.1.16",
@@ -11,6 +12,7 @@
     "@icedesign/layout": "^0.1.2",
     "@icedesign/menu": "^0.1.0",
     "@icedesign/skin": "^0.1.0",
+    "bizcharts": "^3.4.3",
     "classnames": "^2.2.5",
     "enquire-js": "^0.1.2",
     "foundation-symbol": "^0.1.0",

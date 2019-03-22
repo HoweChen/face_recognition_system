@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+// import { Button } from '@icedesign/base';
 import FaceCamera from '../../../../components/FaceCamera';
 
 
@@ -9,18 +10,17 @@ export default class LoginIntro extends Component {
 
   static defaultProps = {};
 
-  constructor(props) {
-    super(props);
-    this.state = {};
-  }
-
   render() {
     return (
-
+      <div>
         {(this.props.isFaceModeOn) ? (
           <div style={styles.container}>
-            <FaceCamera />
-          </div>) : (
+            <div style={styles.logo}>
+              <FaceCamera setUsername={username => this.props.setUsername(username)} />
+            </div>
+            <div style={styles.border} />
+          </div>
+        ) : (
           <div style={styles.container}>
             <div style={styles.logo}>
               <a href="#"
@@ -34,8 +34,8 @@ export default class LoginIntro extends Component {
               </a>
             </div>
             <div style={styles.title}>
-          技术领域智能助手 <br />
-          让沟通变得更加智能、高效、便捷
+              技术领域智能助手 <br />
+              让沟通变得更加智能、高效、便捷
             </div>
             <p style={styles.description}>Amazing Stuff is Lorem Here.ICE
               Team
@@ -46,8 +46,9 @@ export default class LoginIntro extends Component {
               Go back to homepage
             </a>
             <div style={styles.border} />
-          </>
+          </div>
         )}
+      </div>
     );
   }
 }

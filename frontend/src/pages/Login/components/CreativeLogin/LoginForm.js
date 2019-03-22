@@ -100,6 +100,7 @@ export default class LoginFrom extends Component {
         links={links}
         changeFaceMode={this.props.changeFaceMode}
         isFaceModeOn={this.props.isFaceModeOn}
+        username={this.props.username}
       />
     );
   }

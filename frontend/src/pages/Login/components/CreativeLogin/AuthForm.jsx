@@ -23,12 +23,14 @@ class AuthForm extends Component {
     formChange: PropTypes.func,
     changeFaceMode: PropTypes.func.isRequired,
     isFaceModeOn: PropTypes.bool.isRequired,
+    username: PropTypes.string,
   };
 
   static defaultProps = {
     links: [],
     handleSubmit: () => {},
     formChange: () => {},
+    username: '',
   };
 
   constructor(props) {
@@ -75,6 +77,7 @@ class AuthForm extends Component {
   };
 
   renderInput = (item) => {
+    console.log(this.state.username);
     return (
       <Row style={styles.formItem} key={item.label}>
         <Col style={styles.formItemCol}>

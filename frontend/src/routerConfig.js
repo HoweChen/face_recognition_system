@@ -6,6 +6,8 @@ import BlankLayout from './layouts/BlankLayout';
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
+
+import Console from './pages/Console';
 import NotFound from './pages/NotFound';
 
 const routerConfig = [
@@ -23,6 +25,11 @@ const routerConfig = [
     path: '/login',
     layout: BlankLayout,
     component: Login,
+  },
+  {
+    path: '/console',
+    layout: BlankLayout,
+    component: Console,
   },
   {
     path: '*',
