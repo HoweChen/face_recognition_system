@@ -39,7 +39,7 @@ class Instance:
 
         process_this_frame = True
 
-        for frame in self.frame_fatch(self.video_capture):
+        for frame, timer_start in self.frame_fatch(self.video_capture):
 
             # Hit 'q' on the keyboard to quit!
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -85,6 +85,9 @@ class Instance:
             # Display the resulting image
             cv2.imshow('Video', frame)
 
+            # time the performance
+            print(f"Time from input to output: {(cv2.getTickCount() - timer_start)/cv2.getTickFrequency()}s")
+
         # Release handle to the webcam
         self.video_capture.release()
         cv2.destroyAllWindows()
@@ -92,7 +95,7 @@ class Instance:
     @staticmethod
     def frame_fatch(video_capture):
         while True:
-            yield video_capture.read()
+            yield (video_capture.read(), cv2.getTickCount())
 
     def face_detection(self, input_frame):
         # Find all the faces and face encodings in the current frame of video
