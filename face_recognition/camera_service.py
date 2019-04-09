@@ -59,6 +59,11 @@ class Instance:
             if cv2.waitKey(1) & 0xFF == ord('1'):
 
                 try:
+                    # find the largest face with its index according to the face_locations
+                    max_size_face = max(self.face_locations,key=lambda x: abs(x[1]-x[0])*abs(x[2]-x[1]))
+                    face_index = self.face_locations.index(max_size_face)
+                    print(f"face index: {face_index}")
+
                     self.r.rpushx("known_face_encodings", self.face_encodings[0].tostring())
                     self.r.rpushx("known_face_names", "Yuhao Chen")
                     print("Success with:", end=" ")
