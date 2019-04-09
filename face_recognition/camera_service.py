@@ -5,6 +5,7 @@ import numpy as np
 from mtcnn.mtcnn import MTCNN
 from multiprocessing.dummy import Pool
 from enum import Enum
+import time
 
 
 class ImagePath(Enum):
@@ -18,7 +19,10 @@ class Instance:
         self.mode = mode
         self.f_e_m = f_e_m  # detect which feature extraction method
         self.redis_pool = redis.ConnectionPool()
-        self.r = redis.Redis(connection_pool=self.redis_pool)
+        try:
+            self.r = redis.Redis(connection_pool=self.redis_pool)
+        except ConnectionError as e:
+            print(e)
         self.detector = MTCNN() if mode == "MTCNN" else None
 
         self.data_validation()
@@ -36,6 +40,11 @@ class Instance:
         process_this_frame = True
 
         for frame in self.frame_fatch(self.video_capture):
+
+            # Hit 'q' on the keyboard to quit!
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
             # Grab a single frame of video
             ret, frame = frame
 
@@ -52,31 +61,29 @@ class Instance:
 
             process_this_frame = not process_this_frame
 
-            # Display the results
-            self.render_boxes(frame)
-
             # Hit '1' on the keyboard to input the new face into the database!
             if cv2.waitKey(1) & 0xFF == ord('1'):
 
                 try:
                     # find the largest face with its index according to the face_locations
-                    max_size_face = max(self.face_locations,key=lambda x: abs(x[1]-x[0])*abs(x[2]-x[1]))
-                    face_index = self.face_locations.index(max_size_face)
-                    print(f"face index: {face_index}")
+                    # max_size_face = max(self.face_locations, key=lambda x: abs(x[1] - x[0]) * abs(x[2] - x[1]))
+                    index_max, location_max = max(enumerate(self.face_locations), key=lambda x: abs(x[1][1] - x[1][0])
+                                                                                                * abs(
+                        x[1][2] - x[1][1]))
+                    # face_index = self.face_locations.index(max_size_face)
+                    print(f"face index: {index_max}")
 
-                    self.r.rpushx("known_face_encodings", self.face_encodings[0].tostring())
+                    self.r.rpushx("known_face_encodings", self.face_encodings[index_max].tostring())
                     self.r.rpushx("known_face_names", "Yuhao Chen")
                     print("Success with:", end=" ")
                     print(self.r.lrange("known_face_names", 0, -1))
                 except Exception as e:
                     print(e)
 
+            # Display the results
+            self.render_boxes(frame)
             # Display the resulting image
             cv2.imshow('Video', frame)
-
-            # Hit 'q' on the keyboard to quit!
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
 
         # Release handle to the webcam
         self.video_capture.release()
@@ -89,19 +96,22 @@ class Instance:
 
     def face_detection(self, input_frame):
         # Find all the faces and face encodings in the current frame of video
-        if self.mode == "MTCNN" and self.detector is not None:
-            try:
-                detect_result = [face["box"] for face in self.detector.detect_faces(input_frame)]
-            except IndexError:
-                # which means the detector doesn't find the faces, then directly show the image without box
-                detect_result = None
+        if self.mode == "MTCNN":
+            if self.detector is None:
+                self.detector = MTCNN()
+            else:
+                try:
+                    detect_result = [face["box"] for face in self.detector.detect_faces(input_frame)]
+                except IndexError:
+                    # which means the detector doesn't find the faces, then directly show the image without box
+                    detect_result = None
 
-            if detect_result is not None:
-                # the detector does find the faces
-                self.face_locations = [tuple(
-                    [single_face[1], single_face[0] + single_face[2],
-                     single_face[1] + single_face[-1],
-                     single_face[0]]) for single_face in detect_result]
+                if detect_result is not None:
+                    # the detector does find the faces
+                    self.face_locations = [tuple(
+                        [single_face[1], single_face[0] + single_face[2],
+                         single_face[1] + single_face[-1],
+                         single_face[0]]) for single_face in detect_result]
         elif self.mode == "HOG":
             self.face_locations = face_recognition.face_locations(input_frame)
         else:
@@ -130,9 +140,10 @@ class Instance:
             best_point = None
 
             # If a match was found in known_face_encodings, just use the first one.
-            if True in true_or_false and len(true_or_false) == len(points):
-                best_point = min(points)
-                winner_index = points.index(best_point)
+            if any(true_or_false) and len(true_or_false) == len(points):
+                winner_index, best_point = min(enumerate(points), key=lambda x: x[1])
+                # best_point = min(points)
+                # winner_index = points.index(best_point)
                 print(winner_index)
                 name = self.r.lrange("known_face_names", 0, -1)[winner_index].decode("utf-8")
             self.face_names.append(name)
@@ -182,5 +193,6 @@ class Instance:
 
 if __name__ == '__main__':
     # instance = Instance(mode="HOG")
+    cv2.useOptimized()
     instance = Instance(mode="MTCNN", f_e_m="NORMAL")
     instance.serve()
