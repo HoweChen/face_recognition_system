@@ -3,9 +3,8 @@ import cv2
 import redis
 import numpy as np
 from mtcnn.mtcnn import MTCNN
-from multiprocessing.dummy import Pool
+# from multiprocessing.dummy import Pool
 from enum import Enum
-import time
 
 
 class ImagePath(Enum):
@@ -48,11 +47,7 @@ class Instance:
             # Grab a single frame of video
             ret, frame = frame
 
-            # Resize frame of video to 1/4 size for faster face recognition processing
-            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-
-            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-            rgb_small_frame = small_frame[:, :, ::-1]
+            rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
 
             # Only process every other frame of video to save time
             if process_this_frame:
@@ -86,7 +81,7 @@ class Instance:
             cv2.imshow('Video', frame)
 
             # time the performance
-            print(f"Time from input to output: {(cv2.getTickCount() - timer_start)/cv2.getTickFrequency()}s")
+            print(f"Time from input to output: {(cv2.getTickCount() - timer_start) / cv2.getTickFrequency()}s")
 
         # Release handle to the webcam
         self.video_capture.release()
@@ -96,6 +91,15 @@ class Instance:
     def frame_fatch(video_capture):
         while True:
             yield (video_capture.read(), cv2.getTickCount())
+
+    @staticmethod
+    def frame_to_rgb_samll_frame(frame):
+        # Resize frame of video to 1/4 size for faster face recognition processing
+        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+
+        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+        rgb_small_frame = small_frame[:, :, ::-1]
+        return rgb_small_frame
 
     def face_detection(self, input_frame):
         # Find all the faces and face encodings in the current frame of video
@@ -192,6 +196,19 @@ class Instance:
                                                                                                      "utf-8")) == 0:
             self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
             self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
+
+    def image_to_db(self, filepath, name: str):
+        frame = cv2.imread(filepath)
+        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
+        self.face_detection(rgb_small_frame)
+        face_encoding = self.face_encodings[0]
+        face_encoding_str = face_encoding.tostring()
+        # make sure that the list is empty then append the base data
+        if self.r.rpushx("known_face_encodings", face_encoding_str) == 0 and self.r.rpushx("known_face_names",
+                                                                                           name.encode(
+                                                                                               "utf-8")) == 0:
+            self.r.rpush("known_face_encodings", face_encoding_str)
+            self.r.rpush("known_face_names", name.encode("utf_8"))
 
 
 if __name__ == '__main__':
