@@ -20,8 +20,9 @@ if __name__ == '__main__':
                     try:
                         file_name = file.name.replace(".jpg", "")
                         ins.image_to_db(filepath=str(file.absolute()), name=str(file_name), image_size="SMALL",
-                                        num_jitters=10)
+                                        num_jitters=1)
                     except Exception as e:
                         print(e)
                         failed_count += 1
+                    print(f"Processed: {count}")
     print(f"total: {count}, failed_count: {failed_count}")
