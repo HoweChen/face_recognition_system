@@ -22,45 +22,45 @@ def run_test(setup, test, iterations_per_test=5, tests_to_run=10):
 
 
 setup_locate_faces = """
-import face_recognition
+import code_base
 
-image = face_recognition.load_image_file("{}")
+image = code_base.load_image_file("{}")
 """
 
 test_locate_faces = """
-face_locations = face_recognition.face_locations(image)
+face_locations = code_base.face_locations(image)
 """
 
 setup_face_landmarks = """
-import face_recognition
+import code_base
 
-image = face_recognition.load_image_file("{}")
-face_locations = face_recognition.face_locations(image)
+image = code_base.load_image_file("{}")
+face_locations = code_base.face_locations(image)
 """
 
 test_face_landmarks = """
-landmarks = face_recognition.face_landmarks(image, face_locations=face_locations)[0]
+landmarks = code_base.face_landmarks(image, face_locations=face_locations)[0]
 """
 
 setup_encode_face = """
-import face_recognition
+import code_base
 
-image = face_recognition.load_image_file("{}")
-face_locations = face_recognition.face_locations(image)
+image = code_base.load_image_file("{}")
+face_locations = code_base.face_locations(image)
 """
 
 test_encode_face = """
-encoding = face_recognition.face_encodings(image, known_face_locations=face_locations)[0]
+encoding = code_base.face_encodings(image, known_face_locations=face_locations)[0]
 """
 
 setup_end_to_end = """
-import face_recognition
+import code_base
 
-image = face_recognition.load_image_file("{}")
+image = code_base.load_image_file("{}")
 """
 
 test_end_to_end = """
-encoding = face_recognition.face_encodings(image)[0]
+encoding = code_base.face_encodings(image)[0]
 """
 
 print("Benchmarks (Note: All benchmarks are only using a single CPU core)")

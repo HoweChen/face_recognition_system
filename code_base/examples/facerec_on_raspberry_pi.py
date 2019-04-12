@@ -1,7 +1,7 @@
 # This is a demo of running face recognition on a Raspberry Pi.
 # This program will print out the names of anyone it recognizes to the console.
 
-# To run this, you need a Raspberry Pi 2 (or greater) with face_recognition and
+# To run this, you need a Raspberry Pi 2 (or greater) with code_base and
 # the picamera[array] module installed.
 # You can follow this installation instructions to get your RPi set up:
 # https://gist.github.com/ageitgey/1ac8dbe8572f3f533df6269dab35df65

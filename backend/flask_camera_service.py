@@ -9,8 +9,8 @@ from typing import AnyStr, List
 
 
 class ImagePath(Enum):
-    OBAMA_IMAGE_FILE = "../face_recognition/examples/obama.jpg"
-    BIDEN_IMAGE_FILE = "../face_recognition/examples/biden.jpg"
+    OBAMA_IMAGE_FILE = "../code_base/examples/obama.jpg"
+    BIDEN_IMAGE_FILE = "../code_base/examples/biden.jpg"
 
 
 class Camera:
@@ -43,7 +43,7 @@ class Camera:
             # Resize frame of video to 1/4 size for faster face recognition processing
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
-            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+            # Convert the image from BGR color (which OpenCV uses) to RGB color (which code_base uses)
             rgb_small_frame = small_frame[:, :, ::-1]
 
             # Only process every other frame of video to save time
@@ -155,7 +155,7 @@ class Camera:
         biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
         str_biden_face_encoding = biden_face_encoding.tostring()
 
-        # make sure that the list is empty then append the base data
+        # make sure that the list is empty then append the code_base data
         if self.r.rpushx("known_face_encodings", str_obama_face_encoding) == 0 and self.r.rpushx("known_face_names",
                                                                                                  "Barack Obama".encode(
                                                                                                          "utf-8")) == 0:

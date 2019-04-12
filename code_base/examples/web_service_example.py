@@ -59,7 +59,7 @@ def upload_image():
 
 
 def detect_faces_in_image(file_stream):
-    # Pre-calculated face encoding of Obama generated with face_recognition.face_encodings(img)
+    # Pre-calculated face encoding of Obama generated with code_base.face_encodings(img)
     known_face_encoding = [-0.09634063,  0.12095481, -0.00436332, -0.07643753,  0.0080383,
                             0.01902981, -0.07184699, -0.09383309,  0.18518871, -0.09588896,
                             0.23951106,  0.0986533 , -0.22114635, -0.1363683 ,  0.04405268,

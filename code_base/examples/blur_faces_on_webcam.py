@@ -4,7 +4,7 @@ import cv2
 # This is a demo of blurring faces in video.
 
 # PLEASE NOTE: This example requires OpenCV (the `cv2` library) to be installed only to read from your webcam.
-# OpenCV is *not* required to use the face_recognition library. It's only required if you want to run this
+# OpenCV is *not* required to use the code_base library. It's only required if you want to run this
 # specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
 # Get a reference to webcam #0 (the default one)

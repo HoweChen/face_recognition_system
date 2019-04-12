@@ -11,7 +11,7 @@ import cv2
 # single images at a time. But if you aren't using a GPU, then batch processing isn't going to be very helpful.
 #
 # PLEASE NOTE: This example requires OpenCV (the `cv2` library) to be installed only to read the video file.
-# OpenCV is *not* required to use the face_recognition library. It's only required if you want to run this
+# OpenCV is *not* required to use the code_base library. It's only required if you want to run this
 # specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
 # Open video file
@@ -28,7 +28,7 @@ while video_capture.isOpened():
     if not ret:
         break
 
-    # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+    # Convert the image from BGR color (which OpenCV uses) to RGB color (which code_base uses)
     frame = frame[:, :, ::-1]
 
     # Save each frame of the video to a list

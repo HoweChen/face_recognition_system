@@ -2,7 +2,7 @@ from PIL import Image
 import face_recognition
 
 # Load the jpg file into a numpy array
-# image = face_recognition.load_image_file("biden.jpg")
+# image = code_base.load_image_file("biden.jpg")
 image = face_recognition.load_image_file("obama.jpg")
 
 # Find all the faces in the image using the default HOG-based model.

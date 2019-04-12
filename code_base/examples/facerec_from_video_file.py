@@ -4,7 +4,7 @@ import cv2
 # This is a demo of running face recognition on a video file and saving the results to a new video file.
 #
 # PLEASE NOTE: This example requires OpenCV (the `cv2` library) to be installed only to read from your webcam.
-# OpenCV is *not* required to use the face_recognition library. It's only required if you want to run this
+# OpenCV is *not* required to use the code_base library. It's only required if you want to run this
 # specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
 # Open the input movie file
@@ -42,7 +42,7 @@ while True:
     if not ret:
         break
 
-    # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+    # Convert the image from BGR color (which OpenCV uses) to RGB color (which code_base uses)
     rgb_frame = frame[:, :, ::-1]
 
     # Find all the faces and face encodings in the current frame of video
