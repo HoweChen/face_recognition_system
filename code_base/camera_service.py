@@ -24,7 +24,7 @@ class Instance:
             print(e)
         self.detector = MTCNN() if mode == "MTCNN" else None
 
-        self.data_validation()
+        # self.data_validation()
 
         # Initialize some variables
         self.face_locations = []
@@ -67,9 +67,11 @@ class Instance:
                         x[1][2] - x[1][1]))
                     # face_index = self.face_locations.index(max_size_face)
                     print(f"face index: {index_max}")
+                    new_face_encoding_string = self.face_encodings[index_max].tostring()
+                    print(self.face_encodings[index_max])
 
-                    self.r.rpushx("known_face_encodings", self.face_encodings[index_max].tostring())
-                    self.r.rpushx("known_face_names", "Yuhao Chen")
+                    self.r.rpush("known_face_encodings", new_face_encoding_string)
+                    self.r.rpush("known_face_names", "Yuhao Chen".encode("utf_8"))
                     print("Success with:", end=" ")
                     print(self.r.lrange("known_face_names", 0, -1))
                 except Exception as e:
@@ -81,7 +83,7 @@ class Instance:
             cv2.imshow('Video', frame)
 
             # time the performance
-            print(f"Time from input to output: {(cv2.getTickCount() - timer_start) / cv2.getTickFrequency()}s")
+            # print(f"Time from input to output: {(cv2.getTickCount() - timer_start) / cv2.getTickFrequency()}s")
 
         # Release handle to the webcam
         self.video_capture.release()
@@ -93,8 +95,8 @@ class Instance:
             yield (video_capture.read(), cv2.getTickCount())
 
     @staticmethod
-    def frame_to_rgb_samll_frame(frame,image_size="LARGE"):
-        if image_size=="LARGE":
+    def frame_to_rgb_samll_frame(frame, image_size="LARGE"):
+        if image_size == "LARGE":
             # only when image is large
             # Resize frame of video to 1/4 size for faster face recognition processing
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -105,7 +107,7 @@ class Instance:
         rgb_small_frame = small_frame[:, :, ::-1]
         return rgb_small_frame
 
-    def face_detection(self, input_frame,num_jitters=1):
+    def face_detection(self, input_frame, num_jitters=1):
         # Find all the faces and face encodings in the current frame of video
         if self.mode == "MTCNN":
             if self.detector is None:
@@ -130,7 +132,7 @@ class Instance:
 
         # feature extraction method
         if self.f_e_m == "NORMAL":
-            self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations,num_jitters)
+            self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations, num_jitters)
         elif self.f_e_m == "FACENET":
             pass
         else:
@@ -155,8 +157,8 @@ class Instance:
                 winner_index, best_point = min(enumerate(points), key=lambda x: x[1])
                 # best_point = min(points)
                 # winner_index = points.index(best_point)
-                print(winner_index)
-                name = self.r.lrange("known_face_names", 0, -1)[winner_index].decode("utf-8")
+                print(f"Winner: {winner_index}, best point: {best_point}")
+                name = self.r.lrange("known_face_names", 0, -1)[winner_index-1].decode("utf-8")
             self.face_names.append(name)
             self.best_point_list.append(best_point)
 
@@ -201,10 +203,10 @@ class Instance:
             self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
             self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
 
-    def image_to_db(self, filepath: str, name: str,image_size="LARGE",num_jitters=1):
+    def image_to_db(self, filepath: str, name: str, image_size, num_jitters):
         frame = cv2.imread(filepath)
-        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame,image_size=image_size)
-        self.face_detection(rgb_small_frame,num_jitters=num_jitters)
+        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
+        self.face_detection(rgb_small_frame, num_jitters=num_jitters)
         face_encoding = self.face_encodings[0]
         face_encoding_str = face_encoding.tostring()
         # make sure that the list is empty then append the code_base data
