@@ -93,15 +93,19 @@ class Instance:
             yield (video_capture.read(), cv2.getTickCount())
 
     @staticmethod
-    def frame_to_rgb_samll_frame(frame):
-        # Resize frame of video to 1/4 size for faster face recognition processing
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+    def frame_to_rgb_samll_frame(frame,image_size="LARGE"):
+        if image_size=="LARGE":
+            # only when image is large
+            # Resize frame of video to 1/4 size for faster face recognition processing
+            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        else:
+            small_frame = frame
 
-        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face recognition uses)
         rgb_small_frame = small_frame[:, :, ::-1]
         return rgb_small_frame
 
-    def face_detection(self, input_frame):
+    def face_detection(self, input_frame,num_jitters=1):
         # Find all the faces and face encodings in the current frame of video
         if self.mode == "MTCNN":
             if self.detector is None:
@@ -126,7 +130,7 @@ class Instance:
 
         # feature extraction method
         if self.f_e_m == "NORMAL":
-            self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations)
+            self.face_encodings = face_recognition.face_encodings(input_frame, self.face_locations,num_jitters)
         elif self.f_e_m == "FACENET":
             pass
         else:
@@ -190,25 +194,25 @@ class Instance:
         biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
         str_biden_face_encoding = biden_face_encoding.tostring()
 
-        # make sure that the list is empty then append the base data
+        # make sure that the list is empty then append the facial data
         if self.r.rpushx("known_face_encodings", str_obama_face_encoding) == 0 and self.r.rpushx("known_face_names",
                                                                                                  "Barack Obama".encode(
                                                                                                      "utf-8")) == 0:
             self.r.rpush("known_face_encodings", str_obama_face_encoding, str_biden_face_encoding)
             self.r.rpush("known_face_names", "Barack Obama".encode("utf_8"), "Joe Biden".encode("utf-8"))
 
-    def image_to_db(self, filepath, name: str):
+    def image_to_db(self, filepath: str, name: str,image_size="LARGE",num_jitters=1):
         frame = cv2.imread(filepath)
-        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
-        self.face_detection(rgb_small_frame)
+        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame,image_size=image_size)
+        self.face_detection(rgb_small_frame,num_jitters=num_jitters)
         face_encoding = self.face_encodings[0]
         face_encoding_str = face_encoding.tostring()
-        # make sure that the list is empty then append the base data
-        if self.r.rpushx("known_face_encodings", face_encoding_str) == 0 and self.r.rpushx("known_face_names",
-                                                                                           name.encode(
-                                                                                               "utf-8")) == 0:
-            self.r.rpush("known_face_encodings", face_encoding_str)
-            self.r.rpush("known_face_names", name.encode("utf_8"))
+        # make sure that the list is empty then append the code_base data
+        # if self.r.rpushx("known_face_encodings", face_encoding_str) == 0 and self.r.rpushx("known_face_names",
+        #                                                                                    name.encode(
+        #                                                                                        "utf-8")) == 0:
+        self.r.rpush("known_face_encodings", face_encoding_str)
+        self.r.rpush("known_face_names", name.encode("utf_8"))
 
 
 if __name__ == '__main__':
