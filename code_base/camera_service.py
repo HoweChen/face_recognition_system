@@ -3,8 +3,10 @@ import cv2
 import redis
 import numpy as np
 from mtcnn.mtcnn import MTCNN
-from multiprocessing.dummy import Process
+import multiprocessing.dummy as T
+import multiprocessing as P
 from enum import Enum
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class ImagePath(Enum):
@@ -37,6 +39,9 @@ class Instance:
         self.video_capture = cv2.VideoCapture(0)
 
         process_this_frame = False
+        processing_process = None
+        register_process = T.Process(target=self.register_to_db)
+        pool = T.Pool(processes=None)
 
         for frame, timer_start in self.frame_fatch(self.video_capture):
 
@@ -47,11 +52,11 @@ class Instance:
             # Grab a single frame of video
             ret, frame = frame
 
+            # processing_process = T.Process(target=self.process_image, args=(frame,))
             # Only process every other frame of video to save time
             if process_this_frame:
-                rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
-                self.face_detection(rgb_small_frame)
-                self.face_matching()
+                # processing_process.start()
+                pool.apply_async(self.process_image, args=(frame,))
 
             process_this_frame = not process_this_frame
 
@@ -59,21 +64,29 @@ class Instance:
             if cv2.waitKey(1) & 0xFF == ord('1'):
 
                 try:
-                    p = Process(target=self.register_to_db)
-                    p.start()
-                    p.join()
+                    register_process.start()
+                    # register_process.join()
                 except Exception as e:
                     print(e)
+            # if processing_process.is_alive():
+            #     processing_process.join()
 
             # Display the results
             self.render_boxes(frame)
             # Display the resulting image
             cv2.imshow('Video', frame)
+            # if register_process.is_alive():
+            #     register_process.join()
 
             # time the performance
-            # print(f"Time from input to output: {(cv2.getTickCount() - timer_start) / cv2.getTickFrequency()}s")
+            timer_diff = Decimal(str((cv2.getTickCount() - timer_start) / cv2.getTickFrequency())).quantize(
+                Decimal("0.000"),
+                rounding=ROUND_HALF_UP)
+            print(f"[Time Info]: Time from input to output: {timer_diff}s")
 
         # Release handle to the webcam
+        pool.close()
+        pool.join()
         self.video_capture.release()
         cv2.destroyAllWindows()
 
@@ -110,6 +123,11 @@ class Instance:
         self.r.rpush("known_face_names", "Yuhao Chen".encode("utf_8"))
         print("Success with:", end=" ")
         print(self.r.lrange("known_face_names", 0, -1))
+
+    def process_image(self, frame):
+        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
+        self.face_detection(rgb_small_frame)
+        self.face_matching()
 
     def face_detection(self, input_frame, num_jitters=1):
         # Find all the faces and face encodings in the current frame of video
@@ -161,7 +179,8 @@ class Instance:
                 winner_index, best_point = min(enumerate(points), key=lambda x: x[1])
                 # best_point = min(points)
                 # winner_index = points.index(best_point)
-                print(f"Winner: {winner_index}, best point: {best_point}")
+                best_point = str(Decimal(best_point).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP))
+                print(f"[Match Info]: Winner: {winner_index}, best point: {best_point}")
                 name = self.r.lrange("known_face_names", 0, -1)[winner_index - 1].decode("utf-8")
             self.face_names.append(name)
             self.best_point_list.append(best_point)
@@ -183,7 +202,7 @@ class Instance:
             cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
             font = cv2.FONT_HERSHEY_DUPLEX
             if temp_best_point is not None:
-                cv2.putText(frame, f"{temp_name}: {temp_best_point:.3f}%", (left + 6, bottom - 6), font, 0.9,
+                cv2.putText(frame, f"{temp_name}: {temp_best_point}%", (left + 6, bottom - 6), font, 0.9,
                             (255, 255, 255), 1)
             else:
                 cv2.putText(frame, f"{temp_name}", (left + 6, bottom - 6), font, 0.9,
