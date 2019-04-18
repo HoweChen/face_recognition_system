@@ -4,7 +4,6 @@ import redis
 import numpy as np
 from mtcnn.mtcnn import MTCNN
 import multiprocessing.dummy as T
-import multiprocessing as P
 from enum import Enum
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -39,7 +38,6 @@ class Instance:
         self.video_capture = cv2.VideoCapture(0)
 
         process_this_frame = False
-        processing_process = None
         register_process = T.Process(target=self.register_to_db)
         pool = T.Pool(processes=None)
 
@@ -68,15 +66,11 @@ class Instance:
                     # register_process.join()
                 except Exception as e:
                     print(e)
-            # if processing_process.is_alive():
-            #     processing_process.join()
 
             # Display the results
             self.render_boxes(frame)
             # Display the resulting image
             cv2.imshow('Video', frame)
-            # if register_process.is_alive():
-            #     register_process.join()
 
             # time the performance
             timer_diff = Decimal(str((cv2.getTickCount() - timer_start) / cv2.getTickFrequency())).quantize(
@@ -85,8 +79,8 @@ class Instance:
             print(f"[Time Info]: Time from input to output: {timer_diff}s")
 
         # Release handle to the webcam
-        pool.close()
-        pool.join()
+        pool.close()  # close the pool and wait for the remain thread finish
+        pool.join()  # let main thread wait till the pool finish
         self.video_capture.release()
         cv2.destroyAllWindows()
 
