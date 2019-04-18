@@ -3,7 +3,7 @@ import cv2
 import redis
 import numpy as np
 from mtcnn.mtcnn import MTCNN
-# from multiprocessing.dummy import Pool
+from multiprocessing.dummy import Process
 from enum import Enum
 
 
@@ -36,7 +36,7 @@ class Instance:
 
         self.video_capture = cv2.VideoCapture(0)
 
-        process_this_frame = True
+        process_this_frame = False
 
         for frame, timer_start in self.frame_fatch(self.video_capture):
 
@@ -47,10 +47,9 @@ class Instance:
             # Grab a single frame of video
             ret, frame = frame
 
-            rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
-
             # Only process every other frame of video to save time
             if process_this_frame:
+                rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
                 self.face_detection(rgb_small_frame)
                 self.face_matching()
 
@@ -60,20 +59,9 @@ class Instance:
             if cv2.waitKey(1) & 0xFF == ord('1'):
 
                 try:
-                    # find the largest face with its index according to the face_locations
-                    # max_size_face = max(self.face_locations, key=lambda x: abs(x[1] - x[0]) * abs(x[2] - x[1]))
-                    index_max, location_max = max(enumerate(self.face_locations), key=lambda x: abs(x[1][1] - x[1][0])
-                                                                                                * abs(
-                        x[1][2] - x[1][1]))
-                    # face_index = self.face_locations.index(max_size_face)
-                    print(f"face index: {index_max}")
-                    new_face_encoding_string = self.face_encodings[index_max].tostring()
-                    print(self.face_encodings[index_max])
-
-                    self.r.rpush("known_face_encodings", new_face_encoding_string)
-                    self.r.rpush("known_face_names", "Yuhao Chen".encode("utf_8"))
-                    print("Success with:", end=" ")
-                    print(self.r.lrange("known_face_names", 0, -1))
+                    p = Process(target=self.register_to_db)
+                    p.start()
+                    p.join()
                 except Exception as e:
                     print(e)
 
@@ -106,6 +94,22 @@ class Instance:
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face recognition uses)
         rgb_small_frame = small_frame[:, :, ::-1]
         return rgb_small_frame
+
+    def register_to_db(self):
+        # find the largest face with its index according to the face_locations
+        # max_size_face = max(self.face_locations, key=lambda x: abs(x[1] - x[0]) * abs(x[2] - x[1]))
+        index_max, location_max = max(enumerate(self.face_locations), key=lambda x: abs(x[1][1] - x[1][0])
+                                                                                    * abs(
+            x[1][2] - x[1][1]))
+        # face_index = self.face_locations.index(max_size_face)
+        print(f"face index: {index_max}")
+        new_face_encoding_string = self.face_encodings[index_max].tostring()
+        print(self.face_encodings[index_max])
+
+        self.r.rpush("known_face_encodings", new_face_encoding_string)
+        self.r.rpush("known_face_names", "Yuhao Chen".encode("utf_8"))
+        print("Success with:", end=" ")
+        print(self.r.lrange("known_face_names", 0, -1))
 
     def face_detection(self, input_frame, num_jitters=1):
         # Find all the faces and face encodings in the current frame of video
@@ -158,7 +162,7 @@ class Instance:
                 # best_point = min(points)
                 # winner_index = points.index(best_point)
                 print(f"Winner: {winner_index}, best point: {best_point}")
-                name = self.r.lrange("known_face_names", 0, -1)[winner_index-1].decode("utf-8")
+                name = self.r.lrange("known_face_names", 0, -1)[winner_index - 1].decode("utf-8")
             self.face_names.append(name)
             self.best_point_list.append(best_point)
 
@@ -218,7 +222,7 @@ class Instance:
 
 
 if __name__ == '__main__':
-    # instance = Instance(mode="HOG")
     cv2.useOptimized()
     instance = Instance(mode="MTCNN", f_e_m="NORMAL")
+    # instance = Instance(mode="HOG", f_e_m="NORMAL")
     instance.serve()
