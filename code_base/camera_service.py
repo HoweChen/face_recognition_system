@@ -16,11 +16,12 @@ class ImagePath(Enum):
 
 class Instance:
     def __init__(self, mode="HOG", f_e_m="NORMAL"):
-        # connect to the redis service
+        self.video_capture: cv2.VideoCapture
         self.mode = mode
         self.f_e_m = f_e_m  # detect which feature extraction method
         self.redis_pool = redis.ConnectionPool()
         try:
+            # connect to the redis service
             self.r = redis.Redis(connection_pool=self.redis_pool)
         except ConnectionError as e:
             print(e)
@@ -35,7 +36,6 @@ class Instance:
         self.best_point_list = []
 
     def serve(self):
-
         self.video_capture = cv2.VideoCapture(0)
 
         process_this_frame = False
@@ -43,7 +43,7 @@ class Instance:
         register_process = T.Process(target=self.register_to_db)
         pool = T.Pool(processes=None)
 
-        for frame, timer_start in self.frame_fatch(self.video_capture):
+        for frame, timer_start in self.frame_fetch(self.video_capture):
 
             # Hit 'q' on the keyboard to quit!
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -91,7 +91,7 @@ class Instance:
         cv2.destroyAllWindows()
 
     @staticmethod
-    def frame_fatch(video_capture):
+    def frame_fetch(video_capture: cv2.VideoCapture):
         while True:
             yield (video_capture.read(), cv2.getTickCount())
 
@@ -100,7 +100,9 @@ class Instance:
         if image_size == "LARGE":
             # only when image is large
             # Resize frame of video to 1/4 size for faster face recognition processing
-            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+            small_frame: np.ndarray = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+            height, width = small_frame.shape[:2]
+            print(f"{height}x{width}")
         else:
             small_frame = frame
 
