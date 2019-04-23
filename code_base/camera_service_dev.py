@@ -121,17 +121,7 @@ class Instance:
         rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
         self.face_detection(rgb_small_frame)
         if self.watermark is True:
-            batched_raw_faces = []
-            for (top, right, bottom, left) in self.face_locations:
-                top = int(top)
-                right = int(right)
-                bottom = int(bottom)
-                left = int(left)
-                # slice_frame = rgb_small_frame[left:top, right:bottom]
-                slice_frame = rgb_small_frame[top:bottom, left:right]
-
-                batched_raw_faces.append(slice_frame)
-            watermarked_frames = self.stegastmp.encode(batched_raw_faces, asecret="Hello")
+            watermarked_frames = self.face_locations_to_stegastamp_size(rgb_small_frame)
             self.face_extraction(watermarked_frames)
         else:
             self.face_extraction(rgb_small_frame)
@@ -144,7 +134,7 @@ class Instance:
             # Resize frame of video to 1/4 size for faster face recognition processing
             small_frame: np.ndarray = cv2.resize(frame, (0, 0), fx=ImageOption.SHRINK_RATE.value,
                                                  fy=ImageOption.SHRINK_RATE.value)
-            height, width = small_frame.shape[:2]
+            # height, width = small_frame.shape[:2]
             # print(f"{height}x{width}") # print the size of resized frame
         else:
             small_frame = frame
@@ -155,27 +145,7 @@ class Instance:
 
     def face_detection(self, input_frame):
 
-        def raw_to_watermark_square(raw_face_locations):
-            converted_face_locations = []
-            for single_face in raw_face_locations:
-                # get the originate coordinate
-                top = single_face[1]
-                right = single_face[0] + single_face[2]
-                bottom = single_face[1] + single_face[-1]
-                left = single_face[0]
-                # get the mid_dot coordinate
-                mid_dot = ((left + right) / 2, (top + bottom) / 2)
-                # get new square coordinates with size 400//resize_rate
-                new_ratio = 200 * ImageOption.SHRINK_RATE.value
-                new_left = int(mid_dot[0] - new_ratio)
-                new_right = int(mid_dot[0] + new_ratio)
-                new_top = int(mid_dot[1] - new_ratio)
-                new_bottom = int(mid_dot[1] + new_ratio)
-
-                converted_face_locations.append(tuple([new_top, new_right, new_bottom, new_left]))
-            return converted_face_locations
-
-        # Find all the faces and face encodings in the current frame of video
+        # Find all the faces and face encodings in the current frame of vid
         face_locations = []
         if self.mode == "MTCNN":
             if self.detector is None:
@@ -189,25 +159,35 @@ class Instance:
 
                 if detect_result is not None:
                     # the detector does find the faces
-
-                    if self.watermark is False:
-                        face_locations = [tuple(
-                            [single_face[1], single_face[0] + single_face[2],
-                             single_face[1] + single_face[-1],
-                             single_face[0]]) for single_face in detect_result]
-                    else:
-                        face_locations = raw_to_watermark_square(detect_result)
+                    face_locations = [tuple(
+                        [single_face[1], single_face[0] + single_face[2],
+                         single_face[1] + single_face[-1],
+                         single_face[0]]) for single_face in detect_result]
 
         elif self.mode == "HOG" or self.mode == "CNN":
             tmp = face_recognition.face_locations(input_frame, model=self.mode.lower())
-            if self.watermark is False:
-                face_locations = tmp
-            else:
-                face_locations = raw_to_watermark_square(tmp)
+            # if self.watermark is False:
+            #     face_locations = tmp
+            # else:
+            #     face_locations = raw_to_watermark_square(tmp)
+            face_locations = tmp
         else:
             raise Exception("Invalid face detection method")
 
         self.face_locations = face_locations
+
+    def face_locations_to_stegastamp_size(self, rgb_small_frame):
+        batched_raw_faces = []
+        for (top, right, bottom, left) in self.face_locations:
+            top = int(top)
+            right = int(right)
+            bottom = int(bottom)
+            left = int(left)
+            # slice_frame = rgb_small_frame[left:top, right:bottom]
+            slice_frame = rgb_small_frame[top:bottom, left:right]
+            batched_raw_faces.append(slice_frame)
+        watermarked_frames = self.stegastmp.encode(batched_raw_faces, asecret="Hello")
+        return watermarked_frames
 
     def face_extraction(self, input_frame, num_jitters=1):
         # feature extraction method
@@ -218,7 +198,7 @@ class Instance:
             else:
                 # if watermark is True, then the input_frame is a list of encoded frames
                 for frame in input_frame:
-                    height, width = frame.shape[:2]
+                    # height, width = frame.shape[:2]
                     # print(f"{height}x{width}") # print the size of resized frame
                     face_encodings.append(face_recognition.face_encodings(frame, [(0, 400, 400, 0)], num_jitters)[0])
         elif self.f_e_m == "FACENET":
@@ -244,8 +224,6 @@ class Instance:
             # If a match was found in known_face_encodings, just use the first one.
             if any(true_or_false) and len(true_or_false) == len(points):
                 winner_index, best_point = min(enumerate(points), key=lambda x: x[1])
-                # best_point = min(points)
-                # winner_index = points.index(best_point)
                 best_point = str(Decimal(best_point).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP))
                 print(f"[Match Info]: Winner: {winner_index}, best point: {best_point}")
                 name = self.r.lrange("known_face_names", 0, -1)[winner_index - 1].decode("utf-8")
@@ -261,10 +239,6 @@ class Instance:
             right *= ImageOption.ENLARGE_RATE.value
             bottom *= ImageOption.ENLARGE_RATE.value
             left *= ImageOption.ENLARGE_RATE.value
-            # top = int(top)
-            # right = int(right)
-            # bottom = int(bottom)
-            # left = int(left)
 
             # Draw a box around the face
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
@@ -319,8 +293,8 @@ class Instance:
 
 if __name__ == '__main__':
     cv2.useOptimized()
-    # instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
-    instance = Instance(mode="MTCNN", f_e_m="NORMAL")
+    instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
+    # instance = Instance(mode="MTCNN", f_e_m="NORMAL")
     # instance = Instance(mode="HOG", f_e_m="NORMAL")
     # instance = Instance(mode="CNN", f_e_m="NORMAL")  # very slow, not recommended
     instance.serve()
