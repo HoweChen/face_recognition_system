@@ -62,7 +62,7 @@ class Instance:
 
             # Grab a single frame of video
             ret, frame = frame
-
+            cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/raw_frame.png", frame)
             # processing_process = T.Process(target=self.process_image, args=(frame,))
             # Only process every other frame of video to save time
             if process_this_frame:
@@ -81,9 +81,10 @@ class Instance:
                     print(e)
 
             # Display the results
-            self.render_boxes(frame)
+            result_frame = self.render_boxes(frame)
             # Display the resulting image
-            cv2.imshow('Video', frame)
+            cv2.imshow('Video', result_frame)
+            cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/result_frame.png", result_frame)
 
             # time the performance
             timer_diff = Decimal(str((cv2.getTickCount() - timer_start) / cv2.getTickFrequency())).quantize(
@@ -92,8 +93,8 @@ class Instance:
             print(f"[Time Info]: Time from input to output: {timer_diff}s")
 
         # Release handle to the webcam
-        # pool.close()
-        # pool.join()
+        pool.close()
+        pool.join()
         self.video_capture.release()
         cv2.destroyAllWindows()
 
@@ -119,8 +120,11 @@ class Instance:
 
     def process_image(self, frame):
         rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
+        # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/rgb_small_frame.png",
+        #             rgb_small_frame)
         self.face_detection(rgb_small_frame)
         if self.watermark is True:
+            # the watermarked_frames size is 400*400
             watermarked_frames = self.face_locations_to_stegastamp_size(rgb_small_frame)
             self.face_extraction(watermarked_frames)
         else:
@@ -166,10 +170,6 @@ class Instance:
 
         elif self.mode == "HOG" or self.mode == "CNN":
             tmp = face_recognition.face_locations(input_frame, model=self.mode.lower())
-            # if self.watermark is False:
-            #     face_locations = tmp
-            # else:
-            #     face_locations = raw_to_watermark_square(tmp)
             face_locations = tmp
         else:
             raise Exception("Invalid face detection method")
@@ -183,7 +183,7 @@ class Instance:
             right = int(right)
             bottom = int(bottom)
             left = int(left)
-            # slice_frame = rgb_small_frame[left:top, right:bottom]
+            # get the face frame from rgb_small_frame
             slice_frame = rgb_small_frame[top:bottom, left:right]
             batched_raw_faces.append(slice_frame)
         watermarked_frames = self.stegastmp.encode(batched_raw_faces, asecret="Hello")
@@ -191,16 +191,28 @@ class Instance:
 
     def face_extraction(self, input_frame, num_jitters=1):
         # feature extraction method
+        # 这里传入的还是蓝色的整张图像
+
         face_encodings = []
         if self.f_e_m == "NORMAL":
             if self.watermark is False:
+                # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/without_watermark.png",
+                #             input_frame)
+                # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/without_watermark_face.png",
+                #             slice_frame)
                 face_encodings = face_recognition.face_encodings(input_frame, self.face_locations, num_jitters)
             else:
                 # if watermark is True, then the input_frame is a list of encoded frames
-                for frame in input_frame:
-                    # height, width = frame.shape[:2]
-                    # print(f"{height}x{width}") # print the size of resized frame
-                    face_encodings.append(face_recognition.face_encodings(frame, [(0, 400, 400, 0)], num_jitters)[0])
+                print(len(input_frame))
+                for frame, face_location in zip(input_frame, self.face_locations):
+                    top, right, bottom, left = face_location
+                    width = right - left
+                    height = bottom - top
+                    frame = cv2.resize(frame, (width, height))[:, :, ::-1]
+                    # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/watermarked_face.png",
+                    #             frame)
+                    face_encodings.append(
+                        face_recognition.face_encodings(frame, [(0, width, height, 0)], num_jitters)[0])
         elif self.f_e_m == "FACENET":
             pass
         else:
@@ -231,6 +243,7 @@ class Instance:
             self.best_point_list.append(best_point)
 
     def render_boxes(self, frame):
+        result_frame = frame
         # Display the results
         for (top, right, bottom, left), temp_name, temp_best_point in zip(self.face_locations, self.face_names,
                                                                           self.best_point_list):
@@ -241,21 +254,21 @@ class Instance:
             left *= ImageOption.ENLARGE_RATE.value
 
             # Draw a box around the face
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-
+            cv2.rectangle(result_frame, (left, top), (right, bottom), (0, 0, 255), 2)
             # Draw a label with a name below the face
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+            cv2.rectangle(result_frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
 
             dot_coordinate = ((left + right) // 2, (top + bottom) // 2)
-            cv2.circle(frame, (dot_coordinate[0], dot_coordinate[1]), 5, (0, 0, 255), -1)
+            cv2.circle(result_frame, (dot_coordinate[0], dot_coordinate[1]), 5, (0, 0, 255), -1)
 
             font = cv2.FONT_HERSHEY_DUPLEX
             if temp_best_point is not None:
-                cv2.putText(frame, f"{temp_name}: {temp_best_point}%", (left + 6, bottom - 6), font, 0.9,
+                cv2.putText(result_frame, f"{temp_name}: {temp_best_point}%", (left + 6, bottom - 6), font, 0.9,
                             (255, 255, 255), 1)
             else:
-                cv2.putText(frame, f"{temp_name}", (left + 6, bottom - 6), font, 0.9,
+                cv2.putText(result_frame, f"{temp_name}", (left + 6, bottom - 6), font, 0.9,
                             (255, 255, 255), 1)
+        return result_frame
 
     def data_validation(self):
         # Load a sample picture and learn how to recognize it.
@@ -293,8 +306,8 @@ class Instance:
 
 if __name__ == '__main__':
     cv2.useOptimized()
-    instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
-    # instance = Instance(mode="MTCNN", f_e_m="NORMAL")
+    # instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
+    instance = Instance(mode="MTCNN", f_e_m="NORMAL")
     # instance = Instance(mode="HOG", f_e_m="NORMAL")
     # instance = Instance(mode="CNN", f_e_m="NORMAL")  # very slow, not recommended
     instance.serve()
