@@ -62,7 +62,7 @@ class Instance:
 
             # Grab a single frame of video
             ret, frame = frame
-            cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/raw_frame.png", frame)
+            # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/raw_frame.png", frame)
             # processing_process = T.Process(target=self.process_image, args=(frame,))
             # Only process every other frame of video to save time
             if process_this_frame:
@@ -84,7 +84,7 @@ class Instance:
             result_frame = self.render_boxes(frame)
             # Display the resulting image
             cv2.imshow('Video', result_frame)
-            cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/result_frame.png", result_frame)
+            # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/result_frame.png", result_frame)
 
             # time the performance
             timer_diff = Decimal(str((cv2.getTickCount() - timer_start) / cv2.getTickFrequency())).quantize(
@@ -118,18 +118,19 @@ class Instance:
         print("Success with:", end=" ")
         print(self.r.lrange("known_face_names", 0, -1))
 
-    def process_image(self, frame):
-        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame)
+    def process_image(self, frame, image_size="LARGE", num_jitters=1, with_matching=True):
+        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
         # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/rgb_small_frame.png",
         #             rgb_small_frame)
         self.face_detection(rgb_small_frame)
         if self.watermark is True:
             # the watermarked_frames size is 400*400
             watermarked_frames = self.face_locations_to_stegastamp_size(rgb_small_frame)
-            self.face_extraction(watermarked_frames)
+            self.face_extraction(watermarked_frames, num_jitters=num_jitters)
         else:
-            self.face_extraction(rgb_small_frame)
-        self.face_matching()
+            self.face_extraction(rgb_small_frame, num_jitters=num_jitters)
+        if with_matching:
+            self.face_matching()
 
     @staticmethod
     def frame_to_rgb_samll_frame(frame, image_size="LARGE"):
@@ -290,9 +291,10 @@ class Instance:
 
     def image_to_db(self, filepath: str, name: str, image_size, num_jitters):
         frame = cv2.imread(filepath)
-        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
-        self.face_detection(rgb_small_frame)
-        self.face_extraction(rgb_small_frame, num_jitters=num_jitters)
+        self.process_image(frame=frame, image_size=image_size, num_jitters=num_jitters, with_matching=False)
+        # rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
+        # self.face_detection(rgb_small_frame)
+        # self.face_extraction(rgb_small_frame, num_jitters=num_jitters)
         # get only one person at a time
         face_encoding = self.face_encodings[0]
         face_encoding_str = face_encoding.tostring()
@@ -306,8 +308,8 @@ class Instance:
 
 if __name__ == '__main__':
     cv2.useOptimized()
-    # instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
-    instance = Instance(mode="MTCNN", f_e_m="NORMAL")
+    instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
+    # instance = Instance(mode="MTCNN", f_e_m="NORMAL")
     # instance = Instance(mode="HOG", f_e_m="NORMAL")
     # instance = Instance(mode="CNN", f_e_m="NORMAL")  # very slow, not recommended
     instance.serve()
