@@ -220,19 +220,24 @@ class Instance:
             raise Exception("Invalid feature extraction method")
         self.face_encodings = face_encodings
 
-    def face_matching(self):
+    def face_matching(self, method="EU"):
 
         self.face_names = []
         self.best_point_list = []
-
+        faces_from_db_list = list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1)))
         for face_encoding in self.face_encodings:
             # See if the face is a match for the known face(s)
-            true_or_false, points = face_recognition.compare_faces(
-                list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1))),
-                face_encoding,
-                tolerance=0.4)
+            true_or_false = []
+            points = []
             name = "Unknown"
             best_point = None
+            if method == "EU":
+                true_or_false, points = face_recognition.compare_faces(
+                    faces_from_db_list,
+                    face_encoding,
+                    tolerance=0.4)
+            else:
+                pass
 
             # If a match was found in known_face_encodings, just use the first one.
             if any(true_or_false) and len(true_or_false) == len(points):
