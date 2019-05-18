@@ -22,12 +22,13 @@ class ImageOption(Enum):
 
 
 class Instance:
-    def __init__(self, mode="HOG", f_e_m="NORMAL", watermark=False):
+    def __init__(self, mode="HOG", f_e_m="NORMAL", watermark=False, show_result=True):
         print("Camera instance is initializing...")
         self.video_capture: cv2.VideoCapture
         self.mode = mode
         self.f_e_m = f_e_m  # detect which feature extraction method
         self.redis_pool = redis.ConnectionPool()
+        self.show_result: bool = show_result
         try:
             # connect to the redis service
             self.r = redis.Redis(connection_pool=self.redis_pool)
@@ -79,11 +80,11 @@ class Instance:
                     # register_process.join()
                 except Exception as e:
                     print(e)
-
-            # Display the results
-            result_frame = self.render_boxes(frame)
-            # Display the resulting image
-            cv2.imshow('Video', result_frame)
+            if self.show_result:
+                # Display the results
+                result_frame = self.render_boxes(frame)
+                # Display the resulting image
+                cv2.imshow('Video', result_frame)
             # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/result_frame.png", result_frame)
 
             # time the performance
@@ -118,7 +119,7 @@ class Instance:
         print("Success with:", end=" ")
         print(self.r.lrange("known_face_names", 0, -1))
 
-    def process_image(self, frame, image_size="LARGE", num_jitters=1, with_matching=True):
+    def process_image(self, frame, image_size="LARGE", num_jitters=1, with_matching=True, match_range=-1):
         rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
         # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/rgb_small_frame.png",
         #             rgb_small_frame)
@@ -130,7 +131,7 @@ class Instance:
         else:
             self.face_extraction(rgb_small_frame, num_jitters=num_jitters)
         if with_matching:
-            self.face_matching()
+            self.face_matching(match_range=match_range)
 
     @staticmethod
     def frame_to_rgb_samll_frame(frame, image_size="LARGE"):
@@ -192,7 +193,7 @@ class Instance:
 
     def face_extraction(self, input_frame, num_jitters=1):
         # feature extraction method
-        # 这里传入的还是蓝色的整张图像
+        # 这里传入的还是蓝色的整张图像，在opencv里蓝色图像是RGB color
 
         face_encodings = []
         if self.f_e_m == "NORMAL":
@@ -204,7 +205,7 @@ class Instance:
                 face_encodings = face_recognition.face_encodings(input_frame, self.face_locations, num_jitters)
             else:
                 # if watermark is True, then the input_frame is a list of encoded frames
-                print(len(input_frame))
+                # print(len(input_frame))
                 for frame, face_location in zip(input_frame, self.face_locations):
                     top, right, bottom, left = face_location
                     width = right - left
@@ -216,15 +217,18 @@ class Instance:
                         face_recognition.face_encodings(frame, [(0, width, height, 0)], num_jitters)[0])
         elif self.f_e_m == "FACENET":
             pass
+        elif self.f_e_m == "MOBILENET":
+            pass
         else:
             raise Exception("Invalid feature extraction method")
         self.face_encodings = face_encodings
 
-    def face_matching(self, method="EU"):
+    def face_matching(self, method="EU", match_range=-1):
 
         self.face_names = []
         self.best_point_list = []
-        faces_from_db_list = list(map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, -1)))
+        faces_from_db_list = list(
+            map(lambda x: np.frombuffer(x), self.r.lrange("known_face_encodings", 0, match_range)))
         for face_encoding in self.face_encodings:
             # See if the face is a match for the known face(s)
             true_or_false = []
@@ -243,8 +247,8 @@ class Instance:
             if any(true_or_false) and len(true_or_false) == len(points):
                 winner_index, best_point = min(enumerate(points), key=lambda x: x[1])
                 best_point = str(Decimal(best_point).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP))
-                print(f"[Match Info]: Winner: {winner_index}, best point: {best_point}")
-                name = self.r.lrange("known_face_names", 0, -1)[winner_index - 1].decode("utf-8")
+                name = self.r.lrange("known_face_names", 0, match_range)[winner_index].decode("utf-8")
+                print(f"[Match Info]: Winner: {winner_index}, best point: {best_point}, name: {name}")
             self.face_names.append(name)
             self.best_point_list.append(best_point)
 
@@ -310,11 +314,22 @@ class Instance:
         self.r.rpush("known_face_encodings", face_encoding_str)
         self.r.rpush("known_face_names", name.encode("utf_8"))
 
+    def match_single_face(self, filepath: str, image_size, num_jitters, match_range=-1):
+        frame = cv2.imread(filepath)
+        self.process_image(frame=frame, image_size=image_size, num_jitters=num_jitters, with_matching=True,
+                           match_range=match_range)
+        face_encoding = self.face_encodings[0]
+        face_encoding_str = face_encoding.tostring()
+        return face_encoding_str
+
 
 if __name__ == '__main__':
     cv2.useOptimized()
-    instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
-    # instance = Instance(mode="MTCNN", f_e_m="NORMAL")
+    # instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True)
+    # instance = Instance(mode="MTCNN", f_e_m="NORMAL", watermark=True, show_result=False)
+    instance = Instance(mode="MTCNN", f_e_m="NORMAL")
+    # instance = Instance(mode="MTCNN", f_e_m="NORMAL", show_result=False)
+
     # instance = Instance(mode="HOG", f_e_m="NORMAL")
     # instance = Instance(mode="CNN", f_e_m="NORMAL")  # very slow, not recommended
     instance.serve()
