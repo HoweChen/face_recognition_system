@@ -119,7 +119,8 @@ class Instance:
         print("Success with:", end=" ")
         print(self.r.lrange("known_face_names", 0, -1))
 
-    def process_image(self, frame, image_size="LARGE", num_jitters=1, with_matching=True, match_range=-1):
+    def process_image(self, frame, image_size="LARGE", num_jitters=1, with_matching=True, match_range=-1,
+                      tolerance=0.4):
         rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
         # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/rgb_small_frame.png",
         #             rgb_small_frame)
@@ -131,7 +132,7 @@ class Instance:
         else:
             self.face_extraction(rgb_small_frame, num_jitters=num_jitters)
         if with_matching:
-            self.face_matching(match_range=match_range)
+            self.face_matching(match_range=match_range, tolerance=tolerance)
 
     @staticmethod
     def frame_to_rgb_samll_frame(frame, image_size="LARGE"):
@@ -175,7 +176,7 @@ class Instance:
             face_locations = tmp
         else:
             raise Exception("Invalid face detection method")
-
+        print(face_locations)
         self.face_locations = face_locations
 
     def face_locations_to_stegastamp_size(self, rgb_small_frame):
@@ -185,9 +186,11 @@ class Instance:
             right = int(right)
             bottom = int(bottom)
             left = int(left)
-            # get the face frame from rgb_small_frame
-            slice_frame = rgb_small_frame[top:bottom, left:right]
-            batched_raw_faces.append(slice_frame)
+            # add this to prevent some coordinate has negative number
+            if top > 0 and right > 0 and bottom > 0 and left > 0:
+                # get the face frame from rgb_small_frame
+                slice_frame = rgb_small_frame[top:bottom, left:right]
+                batched_raw_faces.append(slice_frame)
         watermarked_frames = self.stegastmp.encode(batched_raw_faces, asecret="Hello")
         return watermarked_frames
 
@@ -223,7 +226,7 @@ class Instance:
             raise Exception("Invalid feature extraction method")
         self.face_encodings = face_encodings
 
-    def face_matching(self, method="EU", match_range=-1):
+    def face_matching(self, method="EU", tolerance=0.4, match_range=-1):
 
         self.face_names = []
         self.best_point_list = []
@@ -239,7 +242,7 @@ class Instance:
                 true_or_false, points = face_recognition.compare_faces(
                     faces_from_db_list,
                     face_encoding,
-                    tolerance=0.4)
+                    tolerance=tolerance)
             else:
                 pass
 
@@ -314,13 +317,14 @@ class Instance:
         self.r.rpush("known_face_encodings", face_encoding_str)
         self.r.rpush("known_face_names", name.encode("utf_8"))
 
-    def match_single_face(self, filepath: str, image_size, num_jitters, match_range=-1):
+    def match_single_face(self, filepath: str, image_size, num_jitters, match_range=-1, tolerance=0.4):
         frame = cv2.imread(filepath)
         self.process_image(frame=frame, image_size=image_size, num_jitters=num_jitters, with_matching=True,
-                           match_range=match_range)
+                           match_range=match_range, tolerance=tolerance)
         face_encoding = self.face_encodings[0]
         face_encoding_str = face_encoding.tostring()
-        return face_encoding_str
+        face_name = self.face_names[0]
+        return face_encoding_str, face_name
 
 
 if __name__ == '__main__':
