@@ -9,6 +9,7 @@ from enum import Enum
 from decimal import Decimal, ROUND_HALF_UP
 from code_base.frame_size import FrameSize
 from code_base.StegaStamp.stegastamp import StegaStamp
+from code_base.persistance.redis import redis_client
 
 
 class ImagePath(Enum):
@@ -27,13 +28,8 @@ class Instance:
         self.video_capture: cv2.VideoCapture
         self.mode = mode
         self.f_e_m = f_e_m  # detect which feature extraction method
-        self.redis_pool = redis.ConnectionPool()
         self.show_result: bool = show_result
-        try:
-            # connect to the redis service
-            self.r = redis.Redis(connection_pool=self.redis_pool)
-        except ConnectionError as e:
-            print(e)
+        self.r = redis_client.r
         self.detector = MTCNN() if mode == "MTCNN" else None
         self.watermark = watermark
         if watermark is True:
@@ -120,11 +116,22 @@ class Instance:
         print(self.r.lrange("known_face_names", 0, -1))
 
     def process_image(self, frame, image_size="LARGE", num_jitters=1, with_matching=True, match_range=-1,
-                      tolerance=0.4):
+                      tolerance=0.4, with_detection=True):
         rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
         # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/rgb_small_frame.png",
         #             rgb_small_frame)
-        self.face_detection(rgb_small_frame)
+        if with_detection:
+            self.face_detection(rgb_small_frame)
+        else:
+            # when register without detection, so that the whole image is the human face
+            # use when dataset is cropped, like extended YALE-B
+            height, width, _ = rgb_small_frame.shape
+            self.face_locations = [(0, width, height, 0)]
+            # rgb_small_frame[top:bottom, left:right])
+            # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/yale_b.jpg",
+            #             rgb_small_frame[0:height, 0:width])
+            # print(height, width)
+
         if self.watermark is True:
             # the watermarked_frames size is 400*400
             watermarked_frames = self.face_locations_to_stegastamp_size(rgb_small_frame)
@@ -145,9 +152,12 @@ class Instance:
             # print(f"{height}x{width}") # print the size of resized frame
         else:
             small_frame = frame
-
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face recognition uses)
-        rgb_small_frame = small_frame[:, :, ::-1]
+        rgb_small_frame = None
+        try:
+            rgb_small_frame = small_frame[:, :, ::-1]
+        except Exception as e:
+            print(f"In frame_to_rgb_small_frame: {e}")
         return rgb_small_frame
 
     def face_detection(self, input_frame):
@@ -176,7 +186,7 @@ class Instance:
             face_locations = tmp
         else:
             raise Exception("Invalid face detection method")
-        print(face_locations)
+        # print(face_locations)
         self.face_locations = face_locations
 
     def face_locations_to_stegastamp_size(self, rgb_small_frame):
@@ -205,7 +215,11 @@ class Instance:
                 #             input_frame)
                 # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/without_watermark_face.png",
                 #             slice_frame)
-                face_encodings = face_recognition.face_encodings(input_frame, self.face_locations, num_jitters)
+                try:
+                    face_encodings = face_recognition.face_encodings(input_frame, self.face_locations, num_jitters)
+                except Exception as e:
+                    print(e)
+                    pass
             else:
                 # if watermark is True, then the input_frame is a list of encoded frames
                 # print(len(input_frame))
@@ -317,6 +331,15 @@ class Instance:
         self.r.rpush("known_face_encodings", face_encoding_str)
         self.r.rpush("known_face_names", name.encode("utf_8"))
 
+    def yaleb_to_db(self, filepath: str, name: str, num_jitters):
+        frame = cv2.imread(filepath)
+        self.process_image(frame=frame, image_size="SMALL", num_jitters=num_jitters, with_matching=False,
+                           with_detection=False)
+        face_encoding = self.face_encodings[0]
+        face_encoding_str = face_encoding.tostring()
+        self.r.rpush("known_face_encodings", face_encoding_str)
+        self.r.rpush("known_face_names", name.encode("utf_8"))
+
     def match_single_face(self, filepath: str, image_size, num_jitters, match_range=-1, tolerance=0.4):
         frame = cv2.imread(filepath)
         self.process_image(frame=frame, image_size=image_size, num_jitters=num_jitters, with_matching=True,
@@ -325,6 +348,37 @@ class Instance:
         face_encoding_str = face_encoding.tostring()
         face_name = self.face_names[0]
         return face_encoding_str, face_name
+
+    def detect_image_only(self, filepath: str, image_size="LARGE", num_jitters=1, with_detection=True):
+        frame = cv2.imread(filepath)
+        rgb_small_frame = self.frame_to_rgb_samll_frame(frame=frame, image_size=image_size)
+        # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/rgb_small_frame.png",
+        #             rgb_small_frame)
+        if with_detection:
+            self.face_detection(rgb_small_frame)
+        # else:
+        #     # when register without detection, so that the whole image is the human face
+        #     # use when dataset is cropped, like extended YALE-B
+        #     height, width, _ = rgb_small_frame.shape
+        #     self.face_locations = [(0, width, height, 0)]
+        #     # rgb_small_frame[top:bottom, left:right])
+        #     # cv2.imwrite("/Users/howechen/GitHub/face_recognition_system/code_base/debug/yale_b.jpg",
+        #     #             rgb_small_frame[0:height, 0:width])
+        #     # print(height, width)
+        # if self.watermark is True:
+        #     # the watermarked_frames size is 400*400
+        #     watermarked_frames = self.face_locations_to_stegastamp_size(rgb_small_frame)
+        #     self.face_extraction(watermarked_frames, num_jitters=num_jitters)
+        # else:
+        #     self.face_extraction(rgb_small_frame, num_jitters=num_jitters)
+        if self.face_locations:
+            return True
+        else:
+            return False
+        # if self.face_encodings:
+        #     return True
+        # else:
+        #     return False
 
 
 if __name__ == '__main__':
