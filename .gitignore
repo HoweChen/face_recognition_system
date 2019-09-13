@@ -2,3 +2,4 @@ venv
 .idea
 .vscode
 examples/.py
+code_base/debug/
