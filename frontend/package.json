@@ -22,7 +22,7 @@
     "react-dom": "^16.7.0",
     "react-router-dom": "^4.2.2",
     "react-webcam": "^1.0.4",
-    "socket.io": "^2.2.0"
+    "socket.io": "^2.4.0"
   },
   "devDependencies": {
     "babel-eslint": "^8.0.3",
